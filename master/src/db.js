@@ -570,9 +570,14 @@ async function updateTaskCompletion(taskId, batchId, workerId, nonce, hash, rewa
         }
       );
       if (batchId) {
+        // Count actual completed tasks for this batch in MongoDB instead of blind $inc
+        const completedCount = await db.collection('tasks').countDocuments({
+          batchId,
+          status: 'completed',
+        });
         await db.collection('batches').updateOne(
           { id: batchId },
-          { $inc: { completedTasks: 1 } }
+          { $set: { completedTasks: completedCount } }
         );
       }
     } catch (err) {

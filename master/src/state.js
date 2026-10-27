@@ -90,6 +90,7 @@ function createCompanyBatch({
   rewardPerTask,
   spotPrice,
   workload,
+  completionTimeSeconds,
 }) {
   const batchNum = counters.batch++;
   const batchId = `corp-b${batchNum}-${crypto.randomBytes(4).toString('hex')}`;
@@ -97,7 +98,7 @@ function createCompanyBatch({
   const diff = Math.max(1, Math.min(8, Number(difficulty) || CONFIG.difficulty));
   const reward = Math.max(1, Math.min(1000, Number(rewardPerTask) || CONFIG.rewardPerTask));
   const wl = workload || 'sha256_pow';
-  const durationSec = Math.max(2, Math.min(20, Number(arguments[0]?.completionTimeSeconds || 4)));
+  const durationSec = Math.max(2, Math.min(20, Number(completionTimeSeconds) || 4));
   const targetDurationMs = durationSec * 1000;
 
   const batchObj = {
@@ -173,8 +174,13 @@ function onTaskCompleted(task, node) {
   if (task.batchId) {
     const b = batches.get(task.batchId);
     if (b) {
-      b.completedTasks = (b.completedTasks || 0) + 1;
-      if (b.completedTasks >= b.totalTasks && b.status !== 'completed') {
+      // Derive completedTasks from actual task statuses to prevent double-counting
+      let done = 0;
+      for (const t of tasks.values()) {
+        if (t.batchId === task.batchId && t.status === 'completed') done++;
+      }
+      b.completedTasks = done;
+      if (done >= b.totalTasks && b.status !== 'completed') {
         b.status = 'completed';
         b.completedAt = Date.now();
         logEvent('info', `🎉 Batch completed: "${b.name}" for ${b.company} (${b.totalTasks}/${b.totalTasks} tasks verified)`);
