@@ -125,34 +125,34 @@ async function initDb() {
     await companiesCol.createIndex({ email: 1 }, { unique: true });
     await invitesCol.createIndex({ inviteToken: 1 }, { unique: true });
 
-    // Ensure demo accounts exist or are updated with current passwords
+    // Ensure initial baseline accounts exist without overwriting existing runtime data
     await usersCol.updateOne(
       { email: SEED_ADMIN.email },
-      { $set: SEED_ADMIN },
+      { $setOnInsert: SEED_ADMIN },
       { upsert: true }
     );
     logEvent('info', 'Configured administrator credentials');
 
     await companiesCol.updateOne(
       { email: SEED_COMPANY.email },
-      { $set: SEED_COMPANY },
+      { $setOnInsert: SEED_COMPANY },
       { upsert: true }
     );
     await companiesCol.updateOne(
       { email: SEED_COMPANY_ALT.email },
-      { $set: SEED_COMPANY_ALT },
+      { $setOnInsert: SEED_COMPANY_ALT },
       { upsert: true }
     );
     logEvent('info', 'Provisioned enterprise client: Apex Quantum AI');
 
     await usersCol.updateOne(
       { email: SEED_USER.email },
-      { $set: SEED_USER },
+      { $setOnInsert: SEED_USER },
       { upsert: true }
     );
     await usersCol.updateOne(
       { email: SEED_USER_ALT.email },
-      { $set: SEED_USER_ALT },
+      { $setOnInsert: SEED_USER_ALT },
       { upsert: true }
     );
     logEvent('info', 'Configured compute contributor demo accounts');
@@ -627,13 +627,78 @@ async function recordClaimDb(wallet, claimRecord) {
   }
 }
 
-async function loadStoredBatchesAndTasks() {
+async function getWalletDb(wallet) {
+  if (isConnected && db && wallet) {
+    try {
+      return await db.collection('wallets').findOne({ wallet });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function getClaimsDb(wallet) {
+  if (isConnected && db && wallet) {
+    try {
+      return await db.collection('claims').find({ wallet }).sort({ timestamp: -1 }).limit(50).toArray();
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function getBatchesDb() {
   if (isConnected && db) {
     try {
-      const batchesList = await db.collection('batches').find({}).toArray();
-      const tasksList = await db.collection('tasks').find({}).toArray();
-      return { batches: batchesList, tasks: tasksList };
+      return await db.collection('batches').find({}).toArray();
     } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function getBatchDb(batchId) {
+  if (isConnected && db && batchId) {
+    try {
+      return await db.collection('batches').findOne({ id: batchId });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function getBatchTasksDb(batchId) {
+  if (isConnected && db && batchId) {
+    try {
+      return await db.collection('tasks').find({ batchId }).toArray();
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function loadAllStoredData() {
+  if (isConnected && db) {
+    try {
+      const [batchesList, tasksList, walletsList, claimsList] = await Promise.all([
+        db.collection('batches').find({}).toArray(),
+        db.collection('tasks').find({}).toArray(),
+        db.collection('wallets').find({}).toArray(),
+        db.collection('claims').find({}).sort({ timestamp: -1 }).toArray(),
+      ]);
+      return {
+        batches: batchesList,
+        tasks: tasksList,
+        wallets: walletsList,
+        claims: claimsList,
+      };
+    } catch (err) {
+      logEvent('warn', `Error loading stored database state: ${err.message}`);
       return null;
     }
   }
@@ -658,5 +723,11 @@ module.exports = {
   updateTaskCompletion,
   creditWalletDb,
   recordClaimDb,
-  loadStoredBatchesAndTasks,
+  getWalletDb,
+  getClaimsDb,
+  getBatchesDb,
+  getBatchDb,
+  getBatchTasksDb,
+  loadAllStoredData,
+  loadStoredBatchesAndTasks: loadAllStoredData,
 };

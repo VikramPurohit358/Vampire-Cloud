@@ -20,7 +20,13 @@ const {
   recordBillingTransaction,
   getBillingHistory,
   getAllAccounts,
+  loadAllStoredData,
   loadStoredBatchesAndTasks,
+  getWalletDb,
+  getClaimsDb,
+  getBatchesDb,
+  getBatchDb,
+  getBatchTasksDb,
 } = require('./db');
 
 function readJson(req, maxBytes = 64 * 1024) {
@@ -269,7 +275,15 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/batches') {
     if (req.method === 'GET') {
-      const list = [...state.getBatches().values()].sort((a, b) => b.createdAt - a.createdAt);
+      let list = [...state.getBatches().values()];
+      if (list.length === 0) {
+        const dbBatches = await getBatchesDb();
+        if (dbBatches && dbBatches.length > 0) {
+          for (const b of dbBatches) state.getBatches().set(b.id, b);
+          list = dbBatches;
+        }
+      }
+      list.sort((a, b) => b.createdAt - a.createdAt);
       return sendJson(res, 200, { ok: true, batches: list });
     }
     if (req.method === 'POST') {
@@ -305,11 +319,15 @@ const server = http.createServer(async (req, res) => {
   const batchResultsMatch = pathname.match(/^\/api\/batches\/([^/]+)\/results$/);
   if (batchResultsMatch && req.method === 'GET') {
     const batchId = decodeURIComponent(batchResultsMatch[1]);
-    const batch = state.getBatches().get(batchId);
+    let batch = state.getBatches().get(batchId);
+    if (!batch) {
+      batch = await getBatchDb(batchId);
+      if (batch) state.getBatches().set(batch.id, batch);
+    }
     if (!batch) {
       return sendJson(res, 404, { ok: false, error: 'Batch not found' });
     }
-    const results = [];
+    let results = [];
     for (const t of state.getTasks().values()) {
       if (t.batchId === batchId) {
         results.push({
@@ -325,14 +343,50 @@ const server = http.createServer(async (req, res) => {
         });
       }
     }
+    if (results.length === 0) {
+      const dbTasks = await getBatchTasksDb(batchId);
+      results = dbTasks.map(t => ({
+        id: t.id,
+        status: t.status,
+        difficulty: t.difficulty,
+        reward: t.reward,
+        completedBy: t.completedBy,
+        completedAt: t.completedAt,
+        nonce: t.nonce,
+        hash: t.hash,
+        attempts: t.attempts,
+      }));
+    }
     return sendJson(res, 200, { ok: true, batch, results });
   }
 
   const walletMatch = pathname.match(/^\/api\/wallets\/([^/]+)$/);
   if (walletMatch && req.method === 'GET') {
     const wallet = decodeURIComponent(walletMatch[1]);
-    const w = state.getWallets().get(wallet) || { earnings: 0, tasks: 0, claimed: 0 };
-    const claims = state.getClaims().get(wallet) || [];
+    let w = state.getWallets().get(wallet);
+    if (!w) {
+      const dbWallet = await getWalletDb(wallet);
+      if (dbWallet) {
+        w = {
+          earnings: Number(dbWallet.earnings) || 0,
+          tasks: Number(dbWallet.tasks) || 0,
+          claimed: Number(dbWallet.claimed) || 0,
+        };
+        state.getWallets().set(wallet, w);
+      } else {
+        w = { earnings: 0, tasks: 0, claimed: 0 };
+      }
+    }
+    let claims = state.getClaims().get(wallet);
+    if (!claims || claims.length === 0) {
+      const dbClaims = await getClaimsDb(wallet);
+      if (dbClaims && dbClaims.length > 0) {
+        claims = dbClaims;
+        state.getClaims().set(wallet, claims);
+      } else {
+        claims = [];
+      }
+    }
     let activeNodes = 0;
     for (const n of state.getNodes().values()) {
       if (n.wallet === wallet && n.status !== 'offline') activeNodes++;
@@ -481,25 +535,60 @@ logEvent('info', 'Task scheduler online: awaiting enterprise company workload br
 
 initDb().then(async () => {
   try {
-    const stored = await loadStoredBatchesAndTasks();
-    if (stored && Array.isArray(stored.batches) && stored.batches.length > 0) {
-      for (const b of stored.batches) {
-        state.getBatches().set(b.id, b);
+    const stored = await loadAllStoredData();
+    if (stored) {
+      // 1. Restore Batches
+      if (Array.isArray(stored.batches)) {
+        for (const b of stored.batches) {
+          state.getBatches().set(b.id, b);
+        }
       }
+
+      // 2. Restore Tasks
       if (Array.isArray(stored.tasks)) {
         for (const t of stored.tasks) {
           t.excluded = new Set(Array.isArray(t.excluded) ? t.excluded : []);
+          if (t.status === 'assigned') {
+            t.status = 'pending';
+            t.assignedTo = null;
+            t.assignedAt = null;
+          }
           state.getTasks().set(t.id, t);
           if (t.status === 'pending' && !state.getQueue().includes(t.id)) {
             state.getQueue().push(t.id);
           }
         }
       }
-      logEvent('info', `Synced ${stored.batches.length} batches and ${stored.tasks.length} tasks from MongoDB`);
+
+      // 3. Restore Wallets (Balances and completed tasks count)
+      if (Array.isArray(stored.wallets)) {
+        for (const w of stored.wallets) {
+          if (w.wallet) {
+            state.getWallets().set(w.wallet, {
+              earnings: Number(w.earnings) || 0,
+              tasks: Number(w.tasks) || 0,
+              claimed: Number(w.claimed) || 0,
+            });
+          }
+        }
+      }
+
+      // 4. Restore Claims
+      if (Array.isArray(stored.claims)) {
+        for (const c of stored.claims) {
+          if (c.wallet) {
+            const list = state.getClaims().get(c.wallet) || [];
+            list.push(c);
+            state.getClaims().set(c.wallet, list);
+          }
+        }
+      }
+
+      logEvent('info', `Synced from MongoDB: ${stored.batches?.length || 0} batches, ${stored.tasks?.length || 0} tasks, ${stored.wallets?.length || 0} wallets, ${stored.claims?.length || 0} claims`);
       dispatch();
     }
   } catch (err) {
-    // ignore
+    logEvent('warn', `Failed to restore database state: ${err.message}`);
   }
   server.listen(CONFIG.port, () => {
     logEvent('info', `Vampire Cloud master listening on :${CONFIG.port}`);
