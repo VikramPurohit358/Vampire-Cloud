@@ -74,7 +74,7 @@ jobs:
       - name: Build master
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: master
           file: master/Dockerfile
           push: false
           tags: vampire-cloud-master:ci
