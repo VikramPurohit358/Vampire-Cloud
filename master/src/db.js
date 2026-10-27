@@ -1,6 +1,12 @@
 'use strict';
 
 const crypto = require('crypto');
+const dns = require('dns');
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch {
+  // ignore
+}
 const { MongoClient } = require('mongodb');
 const { CONFIG } = require('./config');
 const { logEvent } = require('./logger');
@@ -102,13 +108,13 @@ async function initDb() {
 
   try {
     client = new MongoClient(CONFIG.mongodbUri, {
-      serverSelectionTimeoutMS: 2500,
-      connectTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 6000,
+      connectTimeoutMS: 6000,
     });
     await client.connect();
-    db = client.db();
+    db = client.db('vampire_cloud');
     isConnected = true;
-    logEvent('info', 'Connected to database');
+    logEvent('info', 'Connected to database (vampire_cloud)');
 
     const usersCol = db.collection('users');
     const companiesCol = db.collection('companies');
@@ -609,6 +615,19 @@ async function recordClaimDb(wallet, claimRecord) {
   }
 }
 
+async function loadStoredBatchesAndTasks() {
+  if (isConnected && db) {
+    try {
+      const batchesList = await db.collection('batches').find({}).toArray();
+      const tasksList = await db.collection('tasks').find({}).toArray();
+      return { batches: batchesList, tasks: tasksList };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 module.exports = {
   initDb,
   getUserByEmail,
@@ -627,4 +646,5 @@ module.exports = {
   updateTaskCompletion,
   creditWalletDb,
   recordClaimDb,
+  loadStoredBatchesAndTasks,
 };

@@ -1,6 +1,39 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
+
+// Auto-load .env from root or master directory if present
+const envPaths = [
+  path.join(process.cwd(), '.env'),
+  path.join(__dirname, '..', '..', '.env'),
+  path.join(__dirname, '..', '.env'),
+];
+
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    try {
+      if (typeof process.loadEnvFile === 'function') {
+        process.loadEnvFile(envPath);
+      } else {
+        const content = fs.readFileSync(envPath, 'utf8');
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const eq = trimmed.indexOf('=');
+          if (eq > 0) {
+            const key = trimmed.slice(0, eq).trim();
+            const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+            if (!process.env[key]) process.env[key] = val;
+          }
+        }
+      }
+      break;
+    } catch {
+      // ignore
+    }
+  }
+}
 
 const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
 

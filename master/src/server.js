@@ -20,6 +20,7 @@ const {
   recordBillingTransaction,
   getBillingHistory,
   getAllAccounts,
+  loadStoredBatchesAndTasks,
 } = require('./db');
 
 function readJson(req, maxBytes = 64 * 1024) {
@@ -466,7 +467,28 @@ if (state.loadState()) {
 }
 dispatch();
 
-initDb().then(() => {
+initDb().then(async () => {
+  try {
+    const stored = await loadStoredBatchesAndTasks();
+    if (stored && Array.isArray(stored.batches) && stored.batches.length > 0) {
+      for (const b of stored.batches) {
+        state.getBatches().set(b.id, b);
+      }
+      if (Array.isArray(stored.tasks)) {
+        for (const t of stored.tasks) {
+          t.excluded = new Set(Array.isArray(t.excluded) ? t.excluded : []);
+          state.getTasks().set(t.id, t);
+          if (t.status === 'pending' && !state.getQueue().includes(t.id)) {
+            state.getQueue().push(t.id);
+          }
+        }
+      }
+      logEvent('info', `Synced ${stored.batches.length} batches and ${stored.tasks.length} tasks from MongoDB`);
+      dispatch();
+    }
+  } catch (err) {
+    // ignore
+  }
   server.listen(CONFIG.port, () => {
     logEvent('info', `Vampire Cloud master listening on :${CONFIG.port}`);
   });
