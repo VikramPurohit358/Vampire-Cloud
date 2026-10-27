@@ -26,7 +26,7 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
   // Workload payload configuration state
   const [name, setName] = useState('Distributed Genomic Sequence Alignment');
   const [category, setCategory] = useState('Bioinformatics & Genomics');
-  const [dockerImage, setDockerImage] = useState('docker.io/apexquantum/genomic-aligner:v3.2');
+  const [dockerImage, setDockerImage] = useState('docker.io/apexquantum/genomic-aligner:latest');
   const [datasetUri, setDatasetUri] = useState('s3://datasets/genomics-seq-2026.parquet');
   const [commandArgs, setCommandArgs] = useState('--threads 8 --batch-size 256 --fp16');
   const [cpuCores, setCpuCores] = useState(8);
@@ -317,7 +317,7 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
                     required
                     value={dockerImage}
                     onChange={(e) => setDockerImage(e.target.value)}
-                    placeholder="docker.io/apexquantum/biomodel:v2.4"
+                    placeholder="docker.io/apexquantum/biomodel:latest"
                     className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-100 font-mono placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
                   />
                 </div>

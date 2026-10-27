@@ -106,7 +106,7 @@ function createCompanyBatch({
     company: String(company || 'Anonymous Enterprise').trim().slice(0, 48),
     name: String(name || 'Custom Workload').trim().slice(0, 64),
     category: category || 'Genomic Hash Sequencing',
-    dockerImage: dockerImage || 'docker.io/apexquantum/genomic-aligner:v3.2',
+    dockerImage: dockerImage || 'docker.io/apexquantum/genomic-aligner:latest',
     datasetUri: datasetUri || 's3://compute-data-us-east/genomic-batch-102.parquet',
     commandArgs: commandArgs || '--threads 8 --batch-size 256 --fp16',
     environment: environment || { cores: 8, memoryGb: 16, gpu: true, arch: 'x86_64 / AVX-512' },

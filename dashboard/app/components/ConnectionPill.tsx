@@ -16,6 +16,11 @@ const MAP: Record<ConnectionState, { text: string; dot: string; style: string }>
     dot: 'bg-rose-400 animate-pulse',
     style: 'border-rose-500/20 bg-rose-500/5 text-rose-300',
   },
+  disconnected: {
+    text: 'Orchestrator Standby',
+    dot: 'bg-slate-400',
+    style: 'border-slate-700 bg-slate-800/40 text-slate-400',
+  },
 };
 
 export function ConnectionPill({ connection }: { connection: ConnectionState }) {

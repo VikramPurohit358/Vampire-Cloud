@@ -1,5 +1,5 @@
 export type NodeStatus = 'idle' | 'computing' | 'offline';
-export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
+export type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'disconnected';
 export type UserRole = 'admin' | 'company' | 'user';
 
 export interface WorkerNode {

@@ -6,10 +6,10 @@ import { getApiBaseUrl } from './utils';
 
 interface Props {
   onLoginSuccess: (session: AuthSession) => void;
-  onExploreGuest: () => void;
+  onExploreGuest?: () => void;
 }
 
-export function LoginPage({ onLoginSuccess, onExploreGuest }: Props) {
+export function LoginPage({ onLoginSuccess }: Props) {
   const [view, setView] = useState<'login' | 'register' | 'invite'>('login');
   
   // Login form state
@@ -402,15 +402,12 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }: Props) {
             </form>
           )}
 
-          {/* Guest Observer Mode */}
+          {/* Security / Compliance footer */}
           <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
-            <button
-              type="button"
-              onClick={onExploreGuest}
-              className="text-xs text-slate-400 hover:text-slate-200 transition font-medium"
-            >
-              Continue as Guest Observer (View Telemetry) →
-            </button>
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>TLS 1.3 Encrypted · Secure Distributed Compute Network</span>
+            </div>
           </div>
 
         </div>

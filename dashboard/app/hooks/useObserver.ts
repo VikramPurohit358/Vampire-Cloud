@@ -4,14 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import type { ConnectionState, Snapshot } from '@/app/types';
 import { getMasterWsUrl } from '@/app/components/utils';
 
-export function useObserver(url?: string) {
+export function useObserver(enabled: boolean = true, url?: string) {
   const targetUrl = url || getMasterWsUrl('/observer');
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [connection, setConnection] = useState<ConnectionState>('connecting');
+  const [connection, setConnection] = useState<ConnectionState>('disconnected');
   const skewRef = useRef(0);
   const [clockSkew, setClockSkew] = useState(0);
 
   useEffect(() => {
+    if (!enabled) {
+      setConnection('disconnected');
+      return;
+    }
     let ws: WebSocket | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let attempt = 0;
@@ -72,7 +76,7 @@ export function useObserver(url?: string) {
       if (timer) clearTimeout(timer);
       try { ws?.close(); } catch { /* ignore */ }
     };
-  }, [targetUrl]);
+  }, [enabled, targetUrl]);
 
   return { snapshot, connection, clockSkew };
 }

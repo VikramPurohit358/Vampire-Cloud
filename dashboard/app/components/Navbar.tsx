@@ -9,7 +9,7 @@ interface Props {
   connection: ConnectionState;
   session: AuthSession | null;
   onLogout: () => void;
-  onOpenLoginModal: () => void;
+  onOpenLoginModal?: () => void;
 }
 
 export function Navbar({
@@ -69,10 +69,6 @@ export function Navbar({
           <div className="flex items-center gap-2.5">
             <span className="text-base sm:text-lg font-bold tracking-tight text-slate-100">
               Vampire Cloud
-            </span>
-            <span className="hidden sm:inline-block text-slate-500 text-xs">/</span>
-            <span className="hidden sm:inline-block text-xs font-mono text-slate-400">
-              v2.0-enterprise
             </span>
             {getRoleBadge()}
           </div>
