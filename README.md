@@ -14,7 +14,7 @@
 
 **Dismantling centralized hyperscaler monopolies by transforming underutilized global consumer and enterprise hardware into a verified, high-throughput compute mesh.**
 
-[📹 Demo Video](https://drive.google.com/file/d/11cKdRtHdirJBxJKJ0Q1gMTc60F4EWiEf/view?usp=sharing) • [Live Architecture](#-system-architecture) • [Visual Showcase](#-visual-showcase--portal-tour) • [Implemented Features](#-feature-matrix-what-we-built) • [Future Roadmap](#-the-grand-roadmap-what-needs-to-be-implemented) • [Quick Start](#-quick-start)
+[📹 Demo Video](https://drive.google.com/file/d/1Yf7mwjV-_3ZAyvvtKTTlNVTp4HN4LOoQ/view?usp=sharing) • [Live Architecture](#-system-architecture) • [Visual Showcase](#-visual-showcase--portal-tour) • [Implemented Features](#-feature-matrix-what-we-built) • [Future Roadmap](#-the-grand-roadmap-what-needs-to-be-implemented) • [Quick Start](#-quick-start)
 
 </div>
 
