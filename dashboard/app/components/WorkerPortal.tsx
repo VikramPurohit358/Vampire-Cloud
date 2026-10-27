@@ -408,7 +408,7 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2">
+            <div key={i} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
               <div className="h-3 w-28 bg-slate-800 rounded" />
               <div className="h-7 w-32 bg-slate-700/80 rounded" />
               <div className="h-2.5 w-24 bg-slate-800 rounded" />
@@ -417,44 +417,99 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="text-xs text-slate-400 mb-1">Unclaimed VAMP Balance</div>
-            <div className="text-2xl font-bold font-mono text-emerald-400 tabular-nums">
-              {fmt(earnings)} <span className="text-xs text-slate-400 font-sans">VAMP</span>
+          {/* Card 1: Unclaimed Balance */}
+          <div className={`card-glow rounded-3xl border p-5 backdrop-blur-2xl transition-all duration-300 shadow-xl ${
+            earnings > 0
+              ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/30 via-slate-900/90 to-slate-900/90 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
+              : 'border-slate-800/80 bg-slate-900/85 hover:border-emerald-500/30 shadow-black/40'
+          }`}>
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Unclaimed Balance
+              </span>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">LIVE</span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">
-              ≈ ${(earnings * 0.15).toFixed(2)} USD valuation
+            <div className="text-3xl font-extrabold font-mono text-gradient-emerald tabular-nums tracking-tight">
+              {fmt(earnings)} <span className="text-xs font-sans text-slate-400 font-normal">VAMP</span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+              <span className="font-mono">≈ ${(earnings * 0.15).toFixed(2)} USD</span>
+              {earnings > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClaim}
+                  disabled={claiming}
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white px-3 py-1 text-[11px] font-semibold transition active:scale-95 shadow-lg shadow-emerald-600/30 flex items-center gap-1 font-sans border border-emerald-400/30"
+                >
+                  {claiming ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Settling…</span>
+                    </>
+                  ) : (
+                    <span>Claim Payout ⚡</span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="text-xs text-slate-400 mb-1">Total Verified Tasks</div>
-            <div className="text-2xl font-bold font-mono text-slate-100 tabular-nums">
+          {/* Card 2: Verified Tasks */}
+          <div className="card-glow rounded-3xl border border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl p-5 hover:border-blue-500/40 transition-all duration-300 shadow-xl shadow-black/40">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                Verified Tasks
+              </span>
+              <span className="text-[10px] font-mono text-cyan-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">SHA-256</span>
+            </div>
+            <div className="text-3xl font-extrabold font-mono text-gradient-cyan tabular-nums tracking-tight">
               {fmt(completedTasks)}
             </div>
-            <div className="mt-2 text-[11px] text-emerald-400 font-medium">
-              100% Cryptographic accuracy
+            <div className="mt-2.5 text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>100% Cryptographic accuracy</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="text-xs text-slate-400 mb-1">Total Settled Claims</div>
-            <div className="text-2xl font-bold font-mono text-blue-400 tabular-nums">
-              {fmt(claimed)} <span className="text-xs text-slate-400 font-sans">VAMP</span>
+          {/* Card 3: Total Settled */}
+          <div className="card-glow rounded-3xl border border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl p-5 hover:border-purple-500/40 transition-all duration-300 shadow-xl shadow-black/40">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                Total Settled
+              </span>
+              <span className="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">LEDGER</span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">
-              {claimsList.length} verified settlements
+            <div className="text-3xl font-extrabold font-mono text-gradient-violet tabular-nums tracking-tight">
+              {fmt(claimed)} <span className="text-xs font-sans text-slate-400 font-normal">VAMP</span>
+            </div>
+            <div className="mt-2.5 text-[11px] text-slate-400 font-mono">
+              {claimsList.length} verified settlements executed
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="text-xs text-slate-400 mb-1">Live Computational Power</div>
-            <div className="text-2xl font-bold font-mono text-slate-100 tabular-nums">
+          {/* Card 4: Computational Power */}
+          <div className="card-glow rounded-3xl border border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl p-5 hover:border-cyan-500/40 transition-all duration-300 shadow-xl shadow-black/40">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className={`w-1.5 h-1.5 rounded-full ${isMining ? 'bg-cyan-400 animate-ping' : 'bg-slate-600'}`} />
+                Computational Power
+              </span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${isMining ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                {isMining ? 'MINING' : 'IDLE'}
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold font-mono text-white tabular-nums tracking-tight">
               {isMining ? fmt(hashrate) : '0'}{' '}
-              <span className="text-xs text-slate-400 font-normal">H/s</span>
+              <span className="text-xs text-slate-400 font-normal font-sans">H/s</span>
             </div>
-            <div className="mt-2 text-[11px] text-slate-400">
-              {isMining ? `${hardware.threads} threads utilized` : 'Hardware standby'}
+            <div className="mt-2.5 text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${isMining ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+              <span>{isMining ? `${hardware.threads} active threads hashing` : 'Hardware in standby'}</span>
             </div>
           </div>
         </div>
@@ -467,13 +522,16 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
         <div className="space-y-6 lg:col-span-7">
           
           {/* In-Browser Compute Engine */}
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+          <section className="card-glow rounded-3xl border border-slate-800/90 bg-slate-900/90 backdrop-blur-2xl p-6 shadow-xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <h2 className="text-sm font-semibold text-slate-100">
-                  In-Browser Computational Contributor
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>In-Browser Compute Node</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    WebSocket Powered
+                  </span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-1">
                   Allocate idle CPU cycles directly within this tab to solve network task blocks.
                 </p>
               </div>
@@ -481,10 +539,10 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
               <button
                 type="button"
                 onClick={() => setIsMining(!isMining)}
-                className={`rounded-lg px-4 py-2 text-xs font-semibold shadow-sm transition active:scale-95 flex items-center gap-2 ${
+                className={`rounded-xl px-5 py-2.5 text-xs font-semibold shadow-lg transition-all active:scale-95 flex items-center gap-2 border ${
                   isMining
-                    ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    ? 'bg-rose-600/90 hover:bg-rose-500 text-white border-rose-500 shadow-rose-600/30'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/40 shadow-emerald-600/30'
                 }`}
               >
                 {isMining ? (
@@ -494,27 +552,71 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
                   </>
                 ) : (
                   <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     </svg>
-                    <span>Start Computing</span>
+                    <span>Start Computing ⚡</span>
                   </>
                 )}
               </button>
             </div>
 
+            {/* 16-Core Neural Thread Cluster Matrix */}
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3.5 mb-4">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2.5">
+                <span className="flex items-center gap-1.5 font-medium text-slate-300">
+                  <span className={`w-2 h-2 rounded-full ${isMining ? 'bg-cyan-400 animate-ping' : 'bg-slate-600'}`} />
+                  CPU Multi-Core Distribution (16 Threads)
+                </span>
+                <span className="text-cyan-400 font-semibold font-mono">
+                  {isMining ? `${fmt(hashrate)} H/s Active` : 'Cluster Standby'}
+                </span>
+              </div>
+              <div className="grid grid-cols-8 gap-1.5">
+                {Array.from({ length: 16 }).map((_, coreIdx) => {
+                  const corePct = isMining ? Math.floor(70 + ((coreIdx * 7 + hashrate) % 28)) : 0;
+                  return (
+                    <div
+                      key={coreIdx}
+                      className={`rounded-xl p-1.5 text-center transition-all border ${
+                        isMining
+                          ? 'bg-slate-900 border-cyan-500/25 shadow-[0_0_8px_rgba(56,189,248,0.1)]'
+                          : 'bg-slate-900/60 border-slate-800/70'
+                      }`}
+                    >
+                      <span className="text-[9px] font-mono text-slate-400 block font-semibold">
+                        C{coreIdx < 10 ? `0${coreIdx}` : coreIdx}
+                      </span>
+                      <div className="w-full bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            isMining
+                              ? coreIdx % 2 === 0
+                                ? 'bg-gradient-to-r from-cyan-400 to-blue-500'
+                                : 'bg-gradient-to-r from-emerald-400 to-teal-400'
+                              : 'bg-slate-700'
+                          }`}
+                          style={{ width: `${corePct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* In-Browser Realistic Mock Terminal */}
-            <div className="mt-4 rounded-xl bg-[#080D1A] border border-slate-800 shadow-2xl overflow-hidden font-mono">
+            <div className="rounded-2xl bg-[#080D1A] border border-slate-800/90 shadow-2xl overflow-hidden font-mono ring-1 ring-white/5">
               {/* Terminal Window Header Bar */}
-              <div className="flex items-center justify-between bg-slate-950/90 px-4 py-2.5 border-b border-slate-800/80">
+              <div className="flex items-center justify-between bg-slate-950/95 px-4 py-2.5 border-b border-slate-800/80">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="h-3 w-3 rounded-full bg-rose-500/80 inline-block border border-rose-600/40" />
-                    <span className="h-3 w-3 rounded-full bg-amber-500/80 inline-block border border-amber-600/40" />
-                    <span className="h-3 w-3 rounded-full bg-emerald-500/80 inline-block border border-emerald-600/40" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block border border-rose-600/40" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block border border-amber-600/40" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block border border-emerald-600/40" />
                   </div>
                   <span className="text-[11px] text-slate-400 ml-2 font-mono flex items-center gap-1.5">
-                    <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span>vampire-runtime@cli:~ (zsh)</span>
@@ -522,7 +624,7 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full font-mono ${
                     workerStatus === 'connected'
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                       : workerStatus === 'reconnecting' || workerStatus === 'connecting'
@@ -624,93 +726,102 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
           </section>
 
           {/* Real-Time Hardware Telemetry */}
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <section className="card-glow rounded-3xl border border-slate-800/90 bg-slate-900/90 backdrop-blur-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-100">
-                  Hardware Telemetry (Dedicated PC Node)
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Hardware Telemetry</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    Host Node
+                  </span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Real-time thermal envelope and load distribution metrics.
+                <p className="text-xs text-slate-400 mt-1">
+                  Real-time thermal envelope and dynamic compute load distribution.
                 </p>
               </div>
-              <span className="text-[11px] font-mono text-slate-400">POLL: 2500ms</span>
+              <span className="text-[11px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+                POLL: 2500ms
+              </span>
             </div>
 
             {isLoading ? (
               <div className="space-y-3 animate-pulse">
                 <div className="grid grid-cols-3 gap-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-lg bg-slate-950/80 border border-slate-800/80 p-3 h-16" />
+                    <div key={i} className="rounded-2xl bg-slate-950/80 border border-slate-800/80 p-3 h-16" />
                   ))}
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-lg bg-slate-950/40 border border-slate-800/60 p-2.5 h-10" />
+                    <div key={i} className="rounded-2xl bg-slate-950/40 border border-slate-800/60 p-2.5 h-10" />
                   ))}
                 </div>
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-lg bg-slate-950/80 border border-slate-800/80 p-3">
-                    <div className="flex justify-between items-center text-xs text-slate-300">
+                  <div className="rounded-2xl bg-slate-950/80 border border-slate-800/90 p-3.5 hover:border-slate-700 transition">
+                    <div className="flex justify-between items-center text-xs text-slate-300 font-medium">
                       <span>CPU Thermal</span>
-                      <span className={`font-mono font-semibold ${hardware.cpuTemp > 75 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                      <span className={`font-mono font-bold ${hardware.cpuTemp > 75 ? 'text-amber-400' : 'text-emerald-400'}`}>
                         {hardware.cpuTemp}°C
                       </span>
                     </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="w-full bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${hardware.cpuTemp > 75 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          hardware.cpuTemp > 75 ? 'bg-gradient-to-r from-amber-400 to-rose-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                        }`}
                         style={{ width: `${(hardware.cpuTemp / 100) * 100}%` }}
                       />
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-slate-950/80 border border-slate-800/80 p-3">
-                    <div className="flex justify-between items-center text-xs text-slate-300">
+                  <div className="rounded-2xl bg-slate-950/80 border border-slate-800/90 p-3.5 hover:border-slate-700 transition">
+                    <div className="flex justify-between items-center text-xs text-slate-300 font-medium">
                       <span>GPU Thermal</span>
-                      <span className={`font-mono font-semibold ${hardware.gpuTemp > 80 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      <span className={`font-mono font-bold ${hardware.gpuTemp > 80 ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {hardware.gpuTemp}°C
                       </span>
                     </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="w-full bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${hardware.gpuTemp > 80 ? 'bg-rose-400' : 'bg-emerald-400'}`}
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          hardware.gpuTemp > 80 ? 'bg-rose-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-400'
+                        }`}
                         style={{ width: `${(hardware.gpuTemp / 100) * 100}%` }}
                       />
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-slate-950/80 border border-slate-800/80 p-3">
-                    <div className="flex justify-between items-center text-xs text-slate-300">
-                      <span>Memory RAM</span>
-                      <span className="font-mono font-semibold text-blue-400">
+                  <div className="rounded-2xl bg-slate-950/80 border border-slate-800/90 p-3.5 hover:border-slate-700 transition">
+                    <div className="flex justify-between items-center text-xs text-slate-300 font-medium">
+                      <span>RAM Utilization</span>
+                      <span className="font-mono font-bold text-cyan-400">
                         {hardware.memoryUtilPct}%
                       </span>
                     </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="w-full bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
                       <div
-                        className="h-full bg-blue-400 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
                         style={{ width: `${hardware.memoryUtilPct}%` }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 mt-3 text-xs font-mono text-slate-300">
-                  <div className="rounded-lg bg-slate-950/40 border border-slate-800/60 p-2.5 flex justify-between">
-                    <span className="text-slate-400">Power Draw:</span>
-                    <span className="text-slate-200 font-semibold">{hardware.powerWatts} W</span>
+                <div className="grid grid-cols-3 gap-3 mt-3 text-xs font-mono">
+                  <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-2.5 flex justify-between items-center">
+                    <span className="text-slate-400">Power:</span>
+                    <span className="text-slate-200 font-bold">{hardware.powerWatts} W</span>
                   </div>
-                  <div className="rounded-lg bg-slate-950/40 border border-slate-800/60 p-2.5 flex justify-between">
+                  <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-2.5 flex justify-between items-center">
                     <span className="text-slate-400">Fan Duty:</span>
-                    <span className="text-slate-200 font-semibold">{hardware.fanSpeedPct}%</span>
+                    <span className="text-slate-200 font-bold">{hardware.fanSpeedPct}%</span>
                   </div>
-                  <div className="rounded-lg bg-slate-950/40 border border-slate-800/60 p-2.5 flex justify-between">
-                    <span className="text-slate-400">CPU Sockets:</span>
-                    <span className="text-slate-200 font-semibold">{hardware.threads} Cores</span>
+                  <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-2.5 flex justify-between items-center">
+                    <span className="text-slate-400">Sockets:</span>
+                    <span className="text-cyan-400 font-bold">{hardware.threads} Cores</span>
                   </div>
                 </div>
               </>

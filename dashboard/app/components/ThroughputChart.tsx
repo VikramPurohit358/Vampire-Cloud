@@ -125,27 +125,33 @@ export function ThroughputChart({ data, range, onRangeChange, isLoading }: Props
       </div>
 
       {/* Chart Canvas with Recharts */}
-      <div className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3 pt-4">
+      <div className="card-glow rounded-2xl border border-slate-800/80 bg-slate-950/85 p-4 pt-5 shadow-2xl backdrop-blur-xl">
         <div className="h-48 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 8, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="throughputAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                  <stop offset="0%" stopColor="#38BDF8" stopOpacity={0.4} />
+                  <stop offset="50%" stopColor="#3B82F6" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#1E1B4B" stopOpacity={0.0} />
+                </linearGradient>
+                <linearGradient id="throughputStrokeGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#38BDF8" />
+                  <stop offset="50%" stopColor="#60A5FA" />
+                  <stop offset="100%" stopColor="#A855F7" />
                 </linearGradient>
               </defs>
 
               <CartesianGrid
                 stroke="#334155"
                 strokeDasharray="3 3"
-                strokeOpacity={0.4}
+                strokeOpacity={0.3}
                 vertical={false}
               />
 
               <XAxis
                 dataKey="time"
-                stroke="#94A3B8"
+                stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
                 axisLine={{ stroke: '#334155' }}
@@ -153,7 +159,7 @@ export function ThroughputChart({ data, range, onRangeChange, isLoading }: Props
               />
 
               <YAxis
-                stroke="#94A3B8"
+                stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -173,13 +179,13 @@ export function ThroughputChart({ data, range, onRangeChange, isLoading }: Props
               <Area
                 type="monotone"
                 dataKey="hashrate"
-                stroke="#3B82F6"
+                stroke="url(#throughputStrokeGradient)"
                 strokeWidth={2.5}
                 fillOpacity={1}
                 fill="url(#throughputAreaGradient)"
                 activeDot={{
                   r: 5,
-                  fill: '#60A5FA',
+                  fill: '#38BDF8',
                   stroke: '#0B0F19',
                   strokeWidth: 2,
                 }}

@@ -7,6 +7,7 @@ import { CompanyPortal } from '@/app/components/CompanyPortal';
 import { WorkerPortal } from '@/app/components/WorkerPortal';
 import { AdminPortal } from '@/app/components/AdminPortal';
 import { LoginPage } from '@/app/components/LoginPage';
+import { CyberBackground } from '@/app/components/CyberBackground';
 import { getApiBaseUrl } from '@/app/components/utils';
 import type { AuthSession, AdminSession, CompanySession, UserSession } from '@/app/types';
 
@@ -78,16 +79,21 @@ export default function DashboardPage() {
   const adminSession: AdminSession | null = session.role === 'admin' ? (session as AdminSession) : null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* Background ambient lighting */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased relative selection:bg-blue-600/30 selection:text-blue-200">
+      {/* Background ambient cyber grid and multi-color lighting */}
+      <CyberBackground />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 opacity-30"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.25) 0%, transparent 60%)',
-        }}
+        className="pointer-events-none fixed inset-0 z-0 opacity-40 cyber-grid"
       />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      >
+        <div className="absolute -top-[30%] left-[20%] w-[60vw] h-[50vh] rounded-full bg-gradient-to-b from-blue-600/15 via-indigo-600/10 to-transparent blur-[120px]" />
+        <div className="absolute top-[60%] -right-[10%] w-[45vw] h-[45vh] rounded-full bg-gradient-to-b from-purple-600/10 via-pink-600/5 to-transparent blur-[140px]" />
+        <div className="absolute top-[80%] left-[5%] w-[35vw] h-[35vh] rounded-full bg-gradient-to-b from-emerald-600/10 to-transparent blur-[130px]" />
+      </div>
 
       {/* Top Navbar with profile area */}
       <Navbar

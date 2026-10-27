@@ -18,31 +18,33 @@ export function Leaderboard({ rows }: Props) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <svg className="w-10 h-10 text-slate-600 mb-2 stroke-[1.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p className="text-xs text-slate-400">No contributor rewards settled in this batch cycle.</p>
+        <div className="w-10 h-10 rounded-full bg-slate-900/80 border border-slate-800/80 flex items-center justify-center mb-2.5">
+          <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-xs text-slate-400 font-mono">No contributor rewards settled in this batch cycle.</p>
       </div>
     );
   }
 
   return (
-    <ol className="divide-y divide-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
+    <ol className="divide-y divide-slate-800/60 rounded-xl overflow-hidden border border-slate-800/70">
       {rows.map((row, i) => (
         <li
           key={row.wallet}
-          className="flex items-center justify-between gap-3 px-4 py-3 even:bg-slate-900/40 odd:bg-slate-950/40 hover:bg-slate-800/50 transition-colors"
+          className="flex items-center justify-between gap-3 px-4 py-3 even:bg-slate-900/40 odd:bg-slate-950/40 hover:bg-cyan-500/5 transition-colors border-l-2 border-transparent hover:border-cyan-400"
         >
           <div className="flex min-w-0 items-center gap-3">
             <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-mono font-semibold ${
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-mono font-bold ${
                 i === 0
-                  ? 'bg-gradient-to-tr from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                  ? 'bg-gradient-to-tr from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
                   : i === 1
-                  ? 'bg-gradient-to-tr from-slate-400/20 to-slate-200/20 text-slate-200 border border-slate-400/40 shadow-[0_0_8px_rgba(148,163,184,0.15)]'
+                  ? 'bg-gradient-to-tr from-slate-400/20 to-slate-200/20 text-slate-200 border border-slate-400/40 shadow-[0_0_10px_rgba(148,163,184,0.2)]'
                   : i === 2
-                  ? 'bg-gradient-to-tr from-orange-700/20 to-amber-700/20 text-amber-400 border border-amber-600/40 shadow-[0_0_8px_rgba(217,119,6,0.15)]'
-                  : 'text-slate-500 bg-slate-900 border border-slate-800'
+                  ? 'bg-gradient-to-tr from-orange-700/20 to-amber-700/20 text-amber-400 border border-amber-600/40 shadow-[0_0_10px_rgba(217,119,6,0.2)]'
+                  : 'text-slate-500 bg-slate-900/80 border border-slate-800'
               }`}
             >
               {i + 1}
@@ -56,15 +58,15 @@ export function Leaderboard({ rows }: Props) {
                 <button
                   type="button"
                   onClick={() => handleCopy(row.wallet)}
-                  className="text-slate-500 hover:text-slate-300 transition"
+                  className="text-slate-500 hover:text-cyan-400 transition"
                   title="Copy full wallet address"
                 >
                   {copiedWallet === row.wallet ? (
-                    <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                   )}
@@ -82,7 +84,7 @@ export function Leaderboard({ rows }: Props) {
             <span className="font-mono text-sm font-semibold text-slate-100">
               {fmt(row.earnings)}
             </span>{' '}
-            <span className="text-[10px] font-mono text-blue-400 font-medium">VAMP</span>
+            <span className="text-[10px] font-mono text-cyan-400 font-semibold">VAMP</span>
           </div>
         </li>
       ))}
