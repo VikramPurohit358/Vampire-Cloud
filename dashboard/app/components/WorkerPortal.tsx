@@ -69,6 +69,7 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
     durationMs: number;
     progressPct: number;
   } | null>(null);
+  const [workerStatus, setWorkerStatus] = useState<'offline' | 'connecting' | 'connected' | 'reconnecting'>('offline');
 
   // Hardware telemetry state
   const [hardware, setHardware] = useState<HardwareTelemetry>({
@@ -152,9 +153,10 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
     return () => clearInterval(timer);
   }, [isMining]);
 
-  // In-browser mining WebSocket engine
+  // In-browser mining WebSocket engine with Auto-Reconnection
   useEffect(() => {
     if (!isMining || !wallet) {
+      setWorkerStatus('offline');
       if (minerWsRef.current) {
         minerWsRef.current.close();
         minerWsRef.current = null;
@@ -163,10 +165,11 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
     }
 
     let isAborted = false;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+    let activeInterval: NodeJS.Timeout | null = null;
     const nodeName = `web-${session?.username || 'client'}`;
+    const nodeId = `web-${wallet.slice(2, 14).toLowerCase()}`;
     const wsUrl = getMasterWsUrl('/worker');
-    const ws = new WebSocket(wsUrl);
-    minerWsRef.current = ws;
 
     const getIsoTimestamp = () => {
       const d = new Date();
@@ -180,95 +183,115 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
       ]);
     };
 
-    ws.onopen = () => {
-      addLog('INFO', `Initializing WebSocket worker connection to master: ${wsUrl}`);
-      addLog('INFO', `Node registered as verified compute worker: ${nodeName}`);
-      addLog('COMPUTE', `Worker pool online: 16 virtual hardware threads available`);
-      ws.send(JSON.stringify({
-        type: 'register',
-        name: nodeName,
-        wallet,
-      }));
-    };
+    function connectWs() {
+      if (isAborted) return;
+      setWorkerStatus('connecting');
+      addLog('INFO', `Connecting to compute orchestrator: ${wsUrl}...`);
 
-    ws.onmessage = async (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'task' || msg.type === 'assigned') {
-          const taskId = msg.taskId || msg.task?.id;
-          const batchId = msg.batchId || msg.task?.batchId;
-          const taskName = msg.name || msg.task?.name || 'Distributed Computational Partition';
-          const reward = msg.reward || msg.task?.reward || 10;
-          const durationMs = msg.targetDurationMs || 3500;
+      const ws = new WebSocket(wsUrl);
+      minerWsRef.current = ws;
 
-          activeTaskRef.current = { id: taskId, batchId, reward };
-          addLog('COMPUTE', `Workload "${taskName}" partition #${taskId} accepted.`);
-          addLog('INFO', `Hardware profile: 16 virtual threads assigned · Target duration: ${(durationMs / 1000).toFixed(1)}s (Bounty: +${reward} VAMP)`);
+      ws.onopen = () => {
+        if (isAborted) return ws.close();
+        setWorkerStatus('connected');
+        addLog('INFO', `Connected! Registering compute worker: ${nodeName}`);
+        addLog('COMPUTE', `Worker pool online: 16 virtual hardware threads ready for dispatch`);
+        ws.send(JSON.stringify({
+          type: 'register',
+          nodeId,
+          name: nodeName,
+          wallet,
+        }));
+      };
 
-          const startTime = Date.now();
-          setActiveCompute({
-            id: taskId,
-            batchId,
-            name: taskName,
-            reward,
-            durationMs,
-            progressPct: 0,
-          });
+      ws.onmessage = async (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'registered') {
+            addLog('SUCCESS', `Worker verified and registered on cluster with Node ID: ${msg.nodeId}`);
+          } else if (msg.type === 'task' || msg.type === 'assigned') {
+            const taskId = msg.taskId || msg.task?.id;
+            const batchId = msg.batchId || msg.task?.batchId;
+            const taskName = msg.name || msg.task?.name || 'Distributed Computational Partition';
+            const reward = msg.reward || msg.task?.reward || 10;
+            const durationMs = msg.targetDurationMs || 3000;
 
-          // Smooth progress update without high CPU load
-          const progressInterval = setInterval(() => {
-            if (isAborted || !isMining) {
-              clearInterval(progressInterval);
-              setActiveCompute(null);
-              return;
-            }
-            const elapsed = Date.now() - startTime;
-            const pct = Math.min(100, Math.round((elapsed / durationMs) * 100));
-            setActiveCompute((prev) => (prev && prev.id === taskId ? { ...prev, progressPct: pct } : prev));
-            hashCountRef.current += 160;
+            activeTaskRef.current = { id: taskId, batchId, reward };
+            addLog('COMPUTE', `Workload "${taskName}" partition #${taskId} accepted.`);
+            addLog('INFO', `Allocating 16 threads · Set task duration: ${(durationMs / 1000).toFixed(1)}s (Bounty: +${reward} VAMP)`);
 
-            if (elapsed >= durationMs) {
-              clearInterval(progressInterval);
-              setActiveCompute(null);
-              const nonce = Math.floor(Math.random() * 800000) + 100000;
-              addLog('SUCCESS', `Workload partition #${taskId} completed in ${(durationMs / 1000).toFixed(1)}s! Transmitting verified proof.`);
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'result',
-                  taskId,
-                  output: { nonce },
-                }));
+            const startTime = Date.now();
+            setActiveCompute({
+              id: taskId,
+              batchId,
+              name: taskName,
+              reward,
+              durationMs,
+              progressPct: 0,
+            });
+
+            if (activeInterval) clearInterval(activeInterval);
+            activeInterval = setInterval(() => {
+              if (isAborted) {
+                if (activeInterval) clearInterval(activeInterval);
+                return;
               }
-              setBrowserSolved((c) => c + 1);
+              const elapsed = Date.now() - startTime;
+              const pct = Math.min(100, Math.round((elapsed / durationMs) * 100));
+              setActiveCompute((prev) => (prev && prev.id === taskId ? { ...prev, progressPct: pct } : prev));
+              hashCountRef.current += 160;
+
+              if (elapsed >= durationMs) {
+                if (activeInterval) clearInterval(activeInterval);
+                setActiveCompute(null);
+                const nonce = Math.floor(Math.random() * 800000) + 100000;
+                addLog('SUCCESS', `Task #${taskId} finished! Transmitting verified proof...`);
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify({
+                    type: 'result',
+                    taskId,
+                    output: { nonce },
+                  }));
+                }
+                setBrowserSolved((c) => c + 1);
+              }
+            }, 100);
+          } else if (msg.type === 'ack' || msg.type === 'verified') {
+            if (msg.accepted !== false) {
+              const r = msg.reward || 10;
+              addLog('SUCCESS', `Proof verified for Task #${msg.taskId} (+${r} VAMP credited to wallet)`);
+              setEarnings((e) => (typeof msg.balance === 'number' ? msg.balance : e + r));
+              setCompletedTasks((t) => t + 1);
+            } else {
+              addLog('WARN', `Master rejected proof on Task #${msg.taskId}: ${msg.reason}`);
             }
-          }, 100);
-        } else if (msg.type === 'ack' || msg.type === 'verified') {
-          if (msg.accepted !== false) {
-            const r = msg.reward || 10;
-            addLog('SUCCESS', `Master confirmed proof for Task #${msg.taskId} (+${r} VAMP escrow credited)`);
-            setEarnings((e) => (typeof msg.balance === 'number' ? msg.balance : e + r));
-            setCompletedTasks((t) => t + 1);
-          } else {
-            addLog('WARN', `Master rejected proof on Task #${msg.taskId}: ${msg.reason}`);
           }
+        } catch {
+          // ignore format errors
         }
-      } catch {
-        // ignore format errors
-      }
-    };
+      };
 
-    ws.onerror = () => {
-      addLog('WARN', 'WebSocket network communication failure. Retrying…');
-    };
+      ws.onerror = () => {
+        addLog('WARN', 'WebSocket network communication failure.');
+      };
 
-    ws.onclose = () => {
-      addLog('INFO', 'Worker connection terminated by remote orchestrator');
-    };
+      ws.onclose = () => {
+        if (isAborted) return;
+        setWorkerStatus('reconnecting');
+        addLog('WARN', 'Connection lost to orchestrator. Automatically reconnecting in 2s...');
+        reconnectTimer = setTimeout(connectWs, 2000);
+      };
+    }
+
+    connectWs();
 
     return () => {
       isAborted = true;
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (activeInterval) clearInterval(activeInterval);
+      if (minerWsRef.current) {
+        minerWsRef.current.close();
+        minerWsRef.current = null;
       }
     };
   }, [isMining, wallet, session?.username]);
@@ -490,12 +513,21 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
 
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full font-mono ${
-                    isMining
+                    workerStatus === 'connected'
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : workerStatus === 'reconnecting' || workerStatus === 'connecting'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse'
                       : 'bg-slate-800 text-slate-400 border border-slate-700'
                   }`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${isMining ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-                    <span>{isMining ? 'ONLINE · 28ms' : 'STANDBY'}</span>
+                    <span className={`h-1.5 w-1.5 rounded-full ${
+                      workerStatus === 'connected' ? 'bg-emerald-400 animate-pulse' :
+                      workerStatus === 'reconnecting' ? 'bg-amber-400 animate-ping' : 'bg-slate-400'
+                    }`} />
+                    <span>{
+                      workerStatus === 'connected' ? 'ONLINE · 28ms' :
+                      workerStatus === 'reconnecting' ? 'RECONNECTING...' :
+                      workerStatus === 'connecting' ? 'CONNECTING...' : 'STANDBY'
+                    }</span>
                   </span>
 
                   {browserLogs.length > 0 && (

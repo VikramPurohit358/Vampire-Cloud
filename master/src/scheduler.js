@@ -184,6 +184,10 @@ function handleRegister(ws, msg) {
   send(ws, { type: 'registered', nodeId: id });
   logEvent('info', `Worker ${label(node)} joined with wallet ${wallet}`);
   dispatch();
+  try {
+    const { broadcastState } = require('./telemetry');
+    broadcastState();
+  } catch {}
 }
 
 function handleResult(node, msg) {
@@ -252,6 +256,10 @@ function handleResult(node, msg) {
 
   checkBatchComplete();
   dispatch();
+  try {
+    const { broadcastState } = require('./telemetry');
+    broadcastState();
+  } catch {}
 }
 
 function handleFailure(node, msg) {
@@ -298,6 +306,10 @@ function onWorkerClose(ws) {
   node.disconnectedAt = Date.now();
   logEvent('info', `Worker ${label(node)} disconnected`);
   dispatch();
+  try {
+    const { broadcastState } = require('./telemetry');
+    broadcastState();
+  } catch {}
 }
 
 module.exports = { dispatch, onWorkerMessage, onWorkerClose };

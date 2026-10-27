@@ -211,8 +211,6 @@ function abandonCurrentTask(node, reason) {
   const task = tasks.get(node.currentTask);
   node.currentTask = null;
   if (task && task.status === 'assigned' && task.assignedTo === node.id) {
-    if (!task.excluded) task.excluded = new Set();
-    task.excluded.add(node.id);
     requeueTask(task, reason);
   }
 }
