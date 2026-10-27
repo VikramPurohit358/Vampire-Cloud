@@ -1,0 +1,22 @@
+{
+  "name": "vampire-cloud-master",
+  "version": "1.0.0",
+  "description": "Vampire Cloud — Orchestrator master server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "mongodb": "^7.7.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

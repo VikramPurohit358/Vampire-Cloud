@@ -1,0 +1,39 @@
+# ─── Node / npm ───────────────────────────────────────────────────────────────
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Ledger / data ────────────────────────────────────────────────────────────
+data/ledger.json
+data/ledger.json.tmp
+
+# ─── Environment ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/settings.json
+.idea/

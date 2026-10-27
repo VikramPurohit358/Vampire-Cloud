@@ -1,0 +1,38 @@
+services:
+  # 1. Master Orchestrator (Node.js Backend with HTTP API + WebSockets)
+  - type: web
+    name: vampire-cloud-master
+    runtime: node
+    plan: free
+    rootDir: master
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false # Paste your free MongoDB Atlas connection string here
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TOTAL_TASKS
+        value: "100"
+      - key: DIFFICULTY
+        value: "5"
+      - key: AUTO_REFILL
+        value: "false"
+
+  # 2. Next.js Enterprise Dashboard (Frontend)
+  - type: web
+    name: vampire-cloud-dashboard
+    runtime: node
+    plan: free
+    rootDir: dashboard
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_MASTER_API_URL
+        sync: false # e.g. https://vampire-cloud-master.onrender.com
+      - key: NEXT_PUBLIC_MASTER_WS_URL
+        sync: false # e.g. wss://vampire-cloud-master.onrender.com/observer

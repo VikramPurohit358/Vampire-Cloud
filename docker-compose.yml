@@ -1,0 +1,88 @@
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: vc-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - vc-mongo-data:/data/db
+    networks:
+      - vc-net
+
+  master:
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    container_name: vc-master
+    restart: unless-stopped
+    ports:
+      - '${PORT:-8080}:8080'
+    environment:
+      PORT: '8080'
+      TOTAL_TASKS: '${TOTAL_TASKS:-100}'
+      DIFFICULTY: '${DIFFICULTY:-5}'
+      TASK_TIMEOUT_MS: '${TASK_TIMEOUT_MS:-30000}'
+      REWARD_PER_TASK: '${REWARD_PER_TASK:-10}'
+      AUTO_REFILL: '${AUTO_REFILL:-false}'
+      MONGODB_URI: '${MONGODB_URI:-mongodb://mongodb:27017/vampire_cloud}'
+      JWT_SECRET: '${JWT_SECRET:-vampire-secret-cloud-key-2026}'
+    volumes:
+      - vc-ledger:/app/data
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - mongodb
+    networks:
+      - vc-net
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    container_name: vc-dashboard
+    restart: unless-stopped
+    ports:
+      - '${DASHBOARD_PORT:-3000}:3000'
+    environment:
+      NEXT_PUBLIC_MASTER_WS_URL: '${NEXT_PUBLIC_MASTER_WS_URL:-ws://localhost:8080/observer}'
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - vc-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      VAMP_MASTER_URL: 'ws://master:8080/worker'
+      VAMP_WALLET: '${VAMP_WALLET:-0xDemoWallet}'
+      VAMP_NODE_NAME: '${VAMP_NODE_NAME:-docker-worker}'
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - vc-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+
+volumes:
+  vc-ledger:
+    name: vampire-cloud-ledger
+  vc-mongo-data:
+    name: vampire-cloud-mongo
+
+networks:
+  vc-net:
+    name: vampire-cloud
+    driver: bridge

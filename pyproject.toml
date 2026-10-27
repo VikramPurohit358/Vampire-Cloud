@@ -1,0 +1,28 @@
+[project]
+name = "vampire-cloud-worker"
+version = "1.0.0"
+description = "Vampire Cloud — worker node"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "websockets>=12.0,<14.0",
+]
+
+[project.scripts]
+vampire-worker = "worker.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["worker*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

@@ -1,0 +1,33 @@
+import type { ConnectionState } from '@/app/types';
+
+const MAP: Record<ConnectionState, { text: string; dot: string; style: string }> = {
+  live: {
+    text: 'Grid Master Online',
+    dot: 'bg-emerald-400',
+    style: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400',
+  },
+  connecting: {
+    text: 'Connecting to Master…',
+    dot: 'bg-amber-400 animate-pulse',
+    style: 'border-amber-500/20 bg-amber-500/5 text-amber-300',
+  },
+  reconnecting: {
+    text: 'Reconnecting to Grid…',
+    dot: 'bg-rose-400 animate-pulse',
+    style: 'border-rose-500/20 bg-rose-500/5 text-rose-300',
+  },
+};
+
+export function ConnectionPill({ connection }: { connection: ConnectionState }) {
+  const { text, dot, style } = MAP[connection];
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${style}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      <span>{text}</span>
+    </div>
+  );
+}
