@@ -36,32 +36,32 @@ export function Navbar({
     if (!session) return null;
     if (session.role === 'admin') {
       return (
-        <span className="rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+        <span className="rounded-full bg-gradient-to-r from-purple-500/15 to-indigo-500/15 text-purple-300 border border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.15)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
           Root Admin
         </span>
       );
     }
     if (session.role === 'company') {
       return (
-        <span className="rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+        <span className="rounded-full bg-gradient-to-r from-blue-500/15 to-cyan-500/15 text-cyan-300 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.15)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
           Enterprise Client
         </span>
       );
     }
     return (
-      <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+      <span className="rounded-full bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
         Compute Contributor
       </span>
     );
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 py-3 sm:px-8">
+    <header className="sticky top-0 z-40 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900/90 backdrop-blur-md px-4 py-3 sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:border-blue-400/50 transition-all duration-300">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
@@ -84,7 +84,7 @@ export function Navbar({
               <button
                 type="button"
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 hover:border-slate-700 transition focus:outline-none"
+                className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 hover:border-slate-700 transition-colors focus:outline-none"
               >
                 {/* Avatar Icon */}
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-800 text-xs font-semibold text-slate-200">
@@ -159,7 +159,7 @@ export function Navbar({
                       setProfileOpen(false);
                       onLogout();
                     }}
-                    className="w-full rounded-lg bg-slate-800/80 hover:bg-rose-500/15 hover:text-rose-300 border border-slate-700 hover:border-rose-500/30 py-2.5 text-xs font-semibold text-slate-200 transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98]"
+                    className="w-full rounded-lg bg-slate-800/80 hover:bg-rose-500/15 hover:text-rose-300 border border-slate-700 hover:border-rose-500/30 py-2.5 text-xs font-semibold text-slate-200 transition-colors duration-150 flex items-center justify-center gap-2 active:scale-[0.98]"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

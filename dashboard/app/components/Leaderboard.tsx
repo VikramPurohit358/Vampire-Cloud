@@ -27,22 +27,22 @@ export function Leaderboard({ rows }: Props) {
   }
 
   return (
-    <ol className="divide-y divide-slate-800">
+    <ol className="divide-y divide-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
       {rows.map((row, i) => (
         <li
           key={row.wallet}
-          className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-850/50 transition-colors"
+          className="flex items-center justify-between gap-3 px-4 py-3 even:bg-slate-900/40 odd:bg-slate-950/40 hover:bg-slate-800/50 transition-colors"
         >
           <div className="flex min-w-0 items-center gap-3">
             <span
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-mono font-semibold ${
                 i === 0
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  ? 'bg-gradient-to-tr from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
                   : i === 1
-                  ? 'bg-slate-700 text-slate-200'
+                  ? 'bg-gradient-to-tr from-slate-400/20 to-slate-200/20 text-slate-200 border border-slate-400/40 shadow-[0_0_8px_rgba(148,163,184,0.15)]'
                   : i === 2
-                  ? 'bg-amber-900/30 text-amber-500'
-                  : 'text-slate-500'
+                  ? 'bg-gradient-to-tr from-orange-700/20 to-amber-700/20 text-amber-400 border border-amber-600/40 shadow-[0_0_8px_rgba(217,119,6,0.15)]'
+                  : 'text-slate-500 bg-slate-900 border border-slate-800'
               }`}
             >
               {i + 1}

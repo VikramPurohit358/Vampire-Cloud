@@ -25,14 +25,23 @@ const MAP: Record<ConnectionState, { text: string; dot: string; style: string }>
 
 export function ConnectionPill({ connection }: { connection: ConnectionState }) {
   const { text, dot, style } = MAP[connection];
+  const isPulsing = connection === 'live' || connection === 'connecting' || connection === 'reconnecting';
+
   return (
     <div
       role="status"
       aria-live="polite"
-      className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${style}`}
+      className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium shadow-sm transition-all duration-300 ${style}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      <span>{text}</span>
+      <span className="relative flex h-2 w-2">
+        {isPulsing && (
+          <span
+            className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${dot.split(' ')[0]}`}
+          />
+        )}
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${dot.split(' ')[0]}`} />
+      </span>
+      <span className="font-sans tracking-tight">{text}</span>
     </div>
   );
 }

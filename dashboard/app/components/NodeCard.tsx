@@ -29,7 +29,9 @@ export function NodeCard({ node, serverNow, timeoutMs }: Props) {
     <li
       className={[
         'rounded-xl border p-4 transition-all duration-200 bg-slate-900/90',
-        node.status === 'computing' ? 'border-emerald-500/30 shadow-md shadow-emerald-500/5' : 'border-slate-800',
+        node.status === 'computing'
+          ? 'border-emerald-500/40 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20'
+          : 'border-slate-800 hover:border-slate-700/80 hover:bg-slate-900',
         node.status === 'offline' ? 'opacity-55' : '',
       ].join(' ')}
     >

@@ -229,10 +229,14 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
               progressPct: 0,
             });
 
+            let taskSubmitted = false;
             if (activeInterval) clearInterval(activeInterval);
             activeInterval = setInterval(() => {
               if (isAborted) {
-                if (activeInterval) clearInterval(activeInterval);
+                if (activeInterval) {
+                  clearInterval(activeInterval);
+                  activeInterval = null;
+                }
                 return;
               }
               const elapsed = Date.now() - startTime;
@@ -240,8 +244,12 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
               setActiveCompute((prev) => (prev && prev.id === taskId ? { ...prev, progressPct: pct } : prev));
               hashCountRef.current += 160;
 
-              if (elapsed >= durationMs) {
-                if (activeInterval) clearInterval(activeInterval);
+              if (elapsed >= durationMs && !taskSubmitted) {
+                taskSubmitted = true;
+                if (activeInterval) {
+                  clearInterval(activeInterval);
+                  activeInterval = null;
+                }
                 setActiveCompute(null);
                 const nonce = Math.floor(Math.random() * 800000) + 100000;
                 addLog('SUCCESS', `Task #${taskId} finished! Transmitting verified proof...`);

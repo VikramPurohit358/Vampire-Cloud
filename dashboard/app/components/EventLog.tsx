@@ -18,13 +18,15 @@ export function EventLog({ events }: Props) {
   }
 
   return (
-    <ul className="space-y-1.5 font-mono text-xs leading-relaxed divide-y divide-slate-800/40">
+    <ul className="space-y-1.5 font-mono text-xs leading-relaxed divide-y divide-slate-800/40 max-h-72 overflow-y-auto pr-1">
       {events.map((e, i) => (
         <li
           key={`${e.ts}-${i}`}
-          className={`pt-1.5 first:pt-0 ${LEVEL_STYLE[e.level]} flex items-start gap-2.5`}
+          className={`pt-1.5 pb-1 first:pt-0 ${LEVEL_STYLE[e.level]} flex items-start gap-2.5 hover:bg-slate-800/30 px-1 rounded transition-colors`}
         >
-          <span className="shrink-0 text-slate-500 tabular-nums">[{clock(e.ts)}]</span>
+          <span className="shrink-0 text-slate-500 tabular-nums text-[11px] font-sans">
+            [{clock(e.ts)}]
+          </span>
           <span className="flex-1 break-words">{e.message}</span>
         </li>
       ))}

@@ -136,7 +136,7 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
   };
 
   const companyBatches = batches.filter(
-    (b) => b.company?.toLowerCase() === session?.name?.toLowerCase() || b.company === 'Apex Quantum AI'
+    (b) => b.company?.toLowerCase() === session?.name?.toLowerCase()
   );
 
   return (
