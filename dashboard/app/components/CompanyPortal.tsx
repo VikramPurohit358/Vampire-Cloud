@@ -35,6 +35,7 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
 
   // Task volume & pricing
   const [totalTasks, setTotalTasks] = useState(50);
+  const [completionTimeSeconds, setCompletionTimeSeconds] = useState(3);
   const [priorityTier, setPriorityTier] = useState<'standard' | 'spot' | 'priority'>('spot');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -110,6 +111,7 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
             arch: 'x86_64 / AVX-512',
           },
           totalTasks: Number(totalTasks),
+          completionTimeSeconds: Number(completionTimeSeconds) || 3,
           difficulty: spotData.networkDifficulty,
           rewardPerTask: unitReward,
           spotPrice: spotData.spotRate,
@@ -458,23 +460,37 @@ export function CompanyPortal({ batches, session, onLogin, onLogout, onBatchCrea
                   </div>
                 </div>
 
-                {/* Batch Block Count & Escrow */}
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <label className="text-slate-400 text-xs">Block Count:</label>
-                    <input
-                      type="number"
-                      min={5}
-                      max={1000}
-                      value={totalTasks}
-                      onChange={(e) => setTotalTasks(Math.max(1, Number(e.target.value)))}
-                      className="w-18 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-slate-100 text-xs focus:border-blue-500 focus:outline-none"
-                    />
+                {/* Batch Block Count & Duration & Escrow */}
+                <div className="pt-2 border-t border-slate-800/80 space-y-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-slate-400 text-xs">Block Count:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={1000}
+                        value={totalTasks}
+                        onChange={(e) => setTotalTasks(Math.max(1, Number(e.target.value)))}
+                        className="w-16 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-slate-100 text-xs focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-slate-400 text-xs">Task Time:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={completionTimeSeconds}
+                        onChange={(e) => setCompletionTimeSeconds(Math.max(1, Number(e.target.value)))}
+                        className="w-14 rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-slate-100 text-xs focus:border-blue-500 focus:outline-none"
+                      />
+                      <span className="text-slate-400 text-[11px]">sec</span>
+                    </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-slate-400 block text-[10px]">Estimated Escrow:</span>
-                    <span className="font-mono font-bold text-slate-100 tabular-nums">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/50">
+                    <span className="text-slate-400 text-[11px]">Estimated Escrow:</span>
+                    <span className="font-mono font-bold text-emerald-400 tabular-nums">
                       {fmt(estimatedCost)} VAMP
                     </span>
                   </div>

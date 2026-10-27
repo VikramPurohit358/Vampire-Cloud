@@ -6,6 +6,7 @@ const path = require('path');
 const { CONFIG } = require('./config');
 const { logEvent } = require('./logger');
 const { isOpen } = require('./utils');
+const { saveBatchAndTasks, updateTaskCompletion, creditWalletDb, recordClaimDb } = require('./db');
 
 const tasks    = new Map();
 const wallets  = new Map();
@@ -96,6 +97,8 @@ function createCompanyBatch({
   const diff = Math.max(1, Math.min(8, Number(difficulty) || CONFIG.difficulty));
   const reward = Math.max(1, Math.min(1000, Number(rewardPerTask) || CONFIG.rewardPerTask));
   const wl = workload || 'sha256_pow';
+  const durationSec = Math.max(2, Math.min(20, Number(arguments[0]?.completionTimeSeconds || 4)));
+  const targetDurationMs = durationSec * 1000;
 
   const batchObj = {
     id: batchId,
@@ -110,6 +113,7 @@ function createCompanyBatch({
     completedTasks: 0,
     difficulty: diff,
     rewardPerTask: reward,
+    completionTimeSeconds: durationSec,
     totalBounty: count * reward,
     spotPrice: Number(spotPrice) || 14.8,
     workload: wl,
@@ -126,17 +130,21 @@ function createCompanyBatch({
       avgLatencyMs: 24 + Math.floor(Math.random() * 8),
       errorRatePct: 0.04,
       throughputMhs: 84.5 + Math.floor(Math.random() * 15),
-      etaSeconds: Math.round((count * 1.8)),
+      etaSeconds: Math.round((count * durationSec)),
     },
   };
   batches.set(batchId, batchObj);
 
+  const newTasksList = [];
   for (let i = 1; i <= count; i++) {
     const id = `${batchId}-t${String(i).padStart(3, '0')}`;
-    tasks.set(id, {
+    const taskObj = {
       id,
       batchId,
+      name: batchObj.name,
+      category: batchObj.category,
       workload: wl,
+      targetDurationMs,
       data: `${batchObj.company.toLowerCase().replace(/[^a-z0-9]/g, '')}:${id}:${crypto.randomBytes(12).toString('hex')}`,
       difficulty: diff,
       reward,
@@ -150,10 +158,13 @@ function createCompanyBatch({
       completedAt: null,
       nonce: null,
       hash: null,
-    });
+    };
+    tasks.set(id, taskObj);
     queue.push(id);
+    newTasksList.push(taskObj);
   }
   dirty = true;
+  saveBatchAndTasks(batchObj, newTasksList).catch(() => {});
   logEvent('info', `🏢 ${batchObj.company} assigned batch "${batchObj.name}" (${count} tasks, bounty ${batchObj.totalBounty} VAMP)`);
   return batchObj;
 }
@@ -170,6 +181,7 @@ function onTaskCompleted(task, node) {
       }
     }
   }
+  updateTaskCompletion(task.id, task.batchId, node.id, task.nonce, task.hash, task.reward).catch(() => {});
 }
 
 function clearTaskTimer(taskId) {
@@ -221,6 +233,7 @@ function creditWallet(wallet, amount) {
   w.tasks++;
   wallets.set(wallet, w);
   counters.minted += validAmount;
+  creditWalletDb(wallet, validAmount).catch(() => {});
   return w.earnings;
 }
 
@@ -247,6 +260,7 @@ function claimWallet(wallet) {
   const list = claims.get(wallet) || [];
   list.unshift(claimRecord);
   claims.set(wallet, list.slice(0, 50));
+  recordClaimDb(wallet, claimRecord).catch(() => {});
 
   dirty = true;
   logEvent('info', `💰 Wallet ${wallet} claimed ${claimedAmount} VAMP (tx: ${txHash.slice(0, 10)}…)`);

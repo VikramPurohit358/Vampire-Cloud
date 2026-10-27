@@ -289,6 +289,7 @@ const server = http.createServer(async (req, res) => {
           rewardPerTask: body.rewardPerTask,
           spotPrice: body.spotPrice,
           workload: body.workload,
+          completionTimeSeconds: body.completionTimeSeconds,
         });
         dispatch();
         broadcastState();

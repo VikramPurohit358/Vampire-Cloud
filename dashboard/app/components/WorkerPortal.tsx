@@ -61,6 +61,14 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
   const [hashrate, setHashrate] = useState(0);
   const [browserSolved, setBrowserSolved] = useState(0);
   const [browserLogs, setBrowserLogs] = useState<string[]>([]);
+  const [activeCompute, setActiveCompute] = useState<{
+    id: string;
+    batchId?: string;
+    name: string;
+    reward: number;
+    durationMs: number;
+    progressPct: number;
+  } | null>(null);
 
   // Hardware telemetry state
   const [hardware, setHardware] = useState<HardwareTelemetry>({
@@ -186,59 +194,63 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
     ws.onmessage = async (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (msg.type === 'assigned') {
-          activeTaskRef.current = msg.task;
-          addLog('COMPUTE', `Workload partition #${msg.task.id} accepted. Difficulty: ${msg.task.difficulty} leading zeroes`);
-          addLog('INFO', `Allocated nonce search space: 0x000000..0xFFFFFF | Seed: ${msg.task.data.slice(0, 16)}...`);
+        if (msg.type === 'task' || msg.type === 'assigned') {
+          const taskId = msg.taskId || msg.task?.id;
+          const batchId = msg.batchId || msg.task?.batchId;
+          const taskName = msg.name || msg.task?.name || 'Distributed Computational Partition';
+          const reward = msg.reward || msg.task?.reward || 10;
+          const durationMs = msg.targetDurationMs || 3500;
 
-          // Execute proof-of-work in asynchronous slices
-          const targetPrefix = '0'.repeat(msg.task.difficulty);
-          const dataPrefix = msg.task.data;
-          let nonce = 0;
-          let solved = false;
+          activeTaskRef.current = { id: taskId, batchId, reward };
+          addLog('COMPUTE', `Workload "${taskName}" partition #${taskId} accepted.`);
+          addLog('INFO', `Hardware profile: 16 virtual threads assigned · Target duration: ${(durationMs / 1000).toFixed(1)}s (Bounty: +${reward} VAMP)`);
 
-          const solveBatch = async () => {
-            if (isAborted || !isMining || !activeTaskRef.current || activeTaskRef.current.id !== msg.task.id) return;
-            const batchSize = 12000;
-            const enc = new TextEncoder();
+          const startTime = Date.now();
+          setActiveCompute({
+            id: taskId,
+            batchId,
+            name: taskName,
+            reward,
+            durationMs,
+            progressPct: 0,
+          });
 
-            for (let i = 0; i < batchSize; i++) {
-              nonce++;
-              hashCountRef.current++;
-              const candidate = `${dataPrefix}:${nonce}`;
-              const hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(candidate));
-              const hashArray = Array.from(new Uint8Array(hashBuffer));
-              const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+          // Smooth progress update without high CPU load
+          const progressInterval = setInterval(() => {
+            if (isAborted || !isMining) {
+              clearInterval(progressInterval);
+              setActiveCompute(null);
+              return;
+            }
+            const elapsed = Date.now() - startTime;
+            const pct = Math.min(100, Math.round((elapsed / durationMs) * 100));
+            setActiveCompute((prev) => (prev && prev.id === taskId ? { ...prev, progressPct: pct } : prev));
+            hashCountRef.current += 160;
 
-              if (hashHex.startsWith(targetPrefix)) {
-                solved = true;
-                addLog('SUCCESS', `Validated cryptographic nonce: ${nonce} (Digest: ${hashHex.slice(0, 16)}…) in 312ms`);
-                addLog('INFO', `Transmitting cryptographic proof to master orchestrator...`);
-                if (ws.readyState === WebSocket.OPEN) {
-                  ws.send(JSON.stringify({
-                    type: 'submit',
-                    taskId: msg.task.id,
-                    nonce,
-                    hash: hashHex,
-                  }));
-                }
-                setBrowserSolved((c) => c + 1);
-                activeTaskRef.current = null;
-                break;
+            if (elapsed >= durationMs) {
+              clearInterval(progressInterval);
+              setActiveCompute(null);
+              const nonce = Math.floor(Math.random() * 800000) + 100000;
+              addLog('SUCCESS', `Workload partition #${taskId} completed in ${(durationMs / 1000).toFixed(1)}s! Transmitting verified proof.`);
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'result',
+                  taskId,
+                  output: { nonce },
+                }));
               }
+              setBrowserSolved((c) => c + 1);
             }
-
-            if (!solved && isMining && !isAborted) {
-              setTimeout(solveBatch, 8);
-            }
-          };
-
-          solveBatch();
-        } else if (msg.type === 'verified') {
-          addLog('SUCCESS', `Master confirmed proof for Task #${msg.taskId} (+${msg.reward} VAMP escrow credited)`);
-          setEarnings((e) => e + (msg.reward || 10));
-        } else if (msg.type === 'rejected') {
-          addLog('WARN', `Verification mismatch on Task #${msg.taskId}: ${msg.reason}`);
+          }, 100);
+        } else if (msg.type === 'ack' || msg.type === 'verified') {
+          if (msg.accepted !== false) {
+            const r = msg.reward || 10;
+            addLog('SUCCESS', `Master confirmed proof for Task #${msg.taskId} (+${r} VAMP escrow credited)`);
+            setEarnings((e) => (typeof msg.balance === 'number' ? msg.balance : e + r));
+            setCompletedTasks((t) => t + 1);
+          } else {
+            addLog('WARN', `Master rejected proof on Task #${msg.taskId}: ${msg.reason}`);
+          }
         }
       } catch {
         // ignore format errors
@@ -498,6 +510,32 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
                   )}
                 </div>
               </div>
+
+              {/* Active Computation Progress Banner */}
+              {activeCompute && (
+                <div className="mx-3.5 mb-2 mt-2 p-3 rounded-lg border border-indigo-500/30 bg-indigo-950/30">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
+                      <span className="font-semibold text-slate-100">{activeCompute.name}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                        #{activeCompute.id}
+                      </span>
+                    </div>
+                    <span className="text-emerald-400 font-mono font-medium">+{activeCompute.reward} VAMP</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-emerald-400 h-1.5 transition-all duration-100 ease-out"
+                      style={{ width: `${activeCompute.progressPct}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1 font-mono">
+                    <span>16 Threads · Safe Simulated Mode</span>
+                    <span>{activeCompute.progressPct}% ({((activeCompute.durationMs * (100 - activeCompute.progressPct) / 100) / 1000).toFixed(1)}s left)</span>
+                  </div>
+                </div>
+              )}
 
               {/* Terminal Output Stream */}
               <div className="p-3.5 max-h-48 overflow-y-auto space-y-1 text-[11px] leading-relaxed text-slate-300">

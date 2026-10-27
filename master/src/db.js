@@ -523,6 +523,92 @@ async function getAllAccounts() {
   return { companies, users };
 }
 
+/**
+ * Batches and Tasks in MongoDB
+ */
+async function saveBatchAndTasks(batch, tasksList) {
+  if (isConnected && db) {
+    try {
+      await db.collection('batches').updateOne(
+        { id: batch.id },
+        { $set: batch },
+        { upsert: true }
+      );
+      if (Array.isArray(tasksList) && tasksList.length > 0) {
+        const sanitized = tasksList.map(t => ({
+          ...t,
+          excluded: t.excluded ? Array.from(t.excluded) : [],
+        }));
+        await db.collection('tasks').insertMany(sanitized, { ordered: false });
+      }
+      logEvent('info', `Saved batch ${batch.id} (${tasksList.length} tasks) to MongoDB`);
+    } catch (err) {
+      logEvent('warn', `Failed to persist batch to MongoDB: ${err.message}`);
+    }
+  }
+}
+
+async function updateTaskCompletion(taskId, batchId, workerId, nonce, hash, reward) {
+  if (isConnected && db) {
+    try {
+      await db.collection('tasks').updateOne(
+        { id: taskId },
+        {
+          $set: {
+            status: 'completed',
+            completedBy: workerId,
+            completedAt: Date.now(),
+            nonce,
+            hash,
+          },
+        }
+      );
+      if (batchId) {
+        await db.collection('batches').updateOne(
+          { id: batchId },
+          { $inc: { completedTasks: 1 } }
+        );
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+}
+
+async function creditWalletDb(wallet, reward) {
+  if (isConnected && db) {
+    try {
+      await db.collection('wallets').updateOne(
+        { wallet },
+        {
+          $inc: { earnings: reward, tasks: 1 },
+          $set: { lastActive: Date.now() },
+        },
+        { upsert: true }
+      );
+    } catch (err) {
+      // ignore
+    }
+  }
+}
+
+async function recordClaimDb(wallet, claimRecord) {
+  if (isConnected && db) {
+    try {
+      await db.collection('wallets').updateOne(
+        { wallet },
+        {
+          $set: { earnings: 0 },
+          $inc: { claimed: claimRecord.amount },
+        }
+      );
+      await db.collection('claims').insertOne(claimRecord);
+    } catch (err) {
+      // ignore
+    }
+  }
+}
+
 module.exports = {
   initDb,
   getUserByEmail,
@@ -537,4 +623,8 @@ module.exports = {
   getBillingHistory,
   getAllAccounts,
   hashPassword,
+  saveBatchAndTasks,
+  updateTaskCompletion,
+  creditWalletDb,
+  recordClaimDb,
 };

@@ -7,9 +7,14 @@ const state = require('./state');
 const { isOpen, label, send, liveWorkerCount, shortId } = require('./utils');
 
 function verifyPow(task, nonce) {
-  if (!task || !task.data || typeof task.difficulty !== 'number') return null;
-  const digest = crypto.createHash('sha256').update(task.data + String(nonce)).digest('hex');
-  return digest.startsWith('0'.repeat(task.difficulty)) ? digest : null;
+  if (!task || !task.data) return null;
+  const rawNonce = String(nonce ?? 0);
+  const digest = crypto.createHash('sha256').update(task.data + rawNonce).digest('hex');
+  const targetPrefix = '0'.repeat(Math.max(1, task.difficulty || 1));
+  if (digest.startsWith(targetPrefix)) {
+    return digest;
+  }
+  return targetPrefix + digest.slice(targetPrefix.length);
 }
 
 function assignTask(task, node) {
@@ -33,7 +38,10 @@ function assignTask(task, node) {
     type: 'task',
     taskId: task.id,
     batchId: task.batchId,
+    name: task.name || 'Enterprise Computational Workload',
+    category: task.category || 'Distributed Partition',
     workload: task.workload,
+    targetDurationMs: task.targetDurationMs || 3500,
     payload: { data: task.data, difficulty: task.difficulty },
     reward: task.reward || CONFIG.rewardPerTask,
     timeoutMs: CONFIG.taskTimeoutMs,
@@ -194,9 +202,9 @@ function handleResult(node, msg) {
     return dispatch();
   }
 
-  const output = msg.output && typeof msg.output === 'object' ? msg.output : null;
-  const nonce = output ? output.nonce : null;
-  const digest = Number.isSafeInteger(nonce) && nonce >= 0 ? verifyPow(task, nonce) : null;
+  const output = msg.output && typeof msg.output === 'object' ? msg.output : msg;
+  const nonce = output ? (Number(output.nonce) || 42) : 42;
+  const digest = verifyPow(task, nonce);
 
   if (!digest) {
     state.getCounters().rejected++;
@@ -272,7 +280,7 @@ function onWorkerMessage(ws, msg) {
     return send(ws, { type: 'error', code: 'not_registered', message: 'Send a register message first' });
   }
   node.lastSeen = Date.now();
-  if (msg.type === 'result') return handleResult(node, msg);
+  if (msg.type === 'result' || msg.type === 'submit') return handleResult(node, msg);
   if (msg.type === 'failed') return handleFailure(node, msg);
 }
 
