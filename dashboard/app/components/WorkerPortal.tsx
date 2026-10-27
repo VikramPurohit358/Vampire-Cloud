@@ -59,7 +59,6 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
   // In-browser miner compute state
   const [isMining, setIsMining] = useState(false);
   const [hashrate, setHashrate] = useState(0);
-  const [browserSolved, setBrowserSolved] = useState(0);
   const [browserLogs, setBrowserLogs] = useState<string[]>([]);
   const [activeCompute, setActiveCompute] = useState<{
     id: string;
@@ -253,7 +252,6 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
                     output: { nonce },
                   }));
                 }
-                setBrowserSolved((c) => c + 1);
               }
             }, 100);
           } else if (msg.type === 'ack' || msg.type === 'verified') {
@@ -261,7 +259,11 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
               const r = msg.reward || 10;
               addLog('SUCCESS', `Proof verified for Task #${msg.taskId} (+${r} VAMP credited to wallet)`);
               setEarnings((e) => (typeof msg.balance === 'number' ? msg.balance : e + r));
-              setCompletedTasks((t) => t + 1);
+              if (typeof msg.tasks === 'number') {
+                setCompletedTasks(msg.tasks);
+              } else {
+                setCompletedTasks((t) => t + 1);
+              }
             } else {
               addLog('WARN', `Master rejected proof on Task #${msg.taskId}: ${msg.reason}`);
             }
@@ -420,7 +422,7 @@ export function WorkerPortal({ nodes, session, onLogin, onLogout }: Props) {
           <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
             <div className="text-xs text-slate-400 mb-1">Total Verified Tasks</div>
             <div className="text-2xl font-bold font-mono text-slate-100 tabular-nums">
-              {fmt(completedTasks + browserSolved)}
+              {fmt(completedTasks)}
             </div>
             <div className="mt-2 text-[11px] text-emerald-400 font-medium">
               100% Cryptographic accuracy

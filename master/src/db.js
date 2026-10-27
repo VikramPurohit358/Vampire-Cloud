@@ -575,9 +575,16 @@ async function updateTaskCompletion(taskId, batchId, workerId, nonce, hash, rewa
           batchId,
           status: 'completed',
         });
+        const batch = await db.collection('batches').findOne({ id: batchId });
+        const isDone = batch && completedCount >= (batch.totalTasks || 0);
         await db.collection('batches').updateOne(
           { id: batchId },
-          { $set: { completedTasks: completedCount } }
+          {
+            $set: {
+              completedTasks: completedCount,
+              ...(isDone ? { status: 'completed', completedAt: Date.now() } : {}),
+            },
+          }
         );
       }
     } catch (err) {

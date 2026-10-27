@@ -257,9 +257,17 @@ function handleResult(node, msg) {
 
   const reward = typeof task.reward === 'number' && task.reward > 0 ? task.reward : CONFIG.rewardPerTask;
   const balance = state.creditWallet(node.wallet, reward);
+  const walletData = node.wallet ? state.getWallets().get(node.wallet) : null;
   state.onTaskCompleted(task, node);
   state.setDirty(true);
-  send(node.ws, { type: 'ack', taskId, accepted: true, reward, balance });
+  send(node.ws, {
+    type: 'ack',
+    taskId,
+    accepted: true,
+    reward,
+    balance,
+    tasks: walletData ? walletData.tasks : undefined,
+  });
   logEvent('info', `${taskId} solved by ${label(node)} (nonce ${nonce}) → +${reward} VAMP`);
 
   checkBatchComplete();
