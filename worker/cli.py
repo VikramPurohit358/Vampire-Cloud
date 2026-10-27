@@ -45,7 +45,8 @@ async def _amain(cfg: Config) -> None:
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:
-            loop.add_signal_handler(sig, main_task.cancel)
+            if main_task is not None:
+                loop.add_signal_handler(sig, main_task.cancel)
         except (NotImplementedError, RuntimeError):
             pass
     try:

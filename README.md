@@ -77,7 +77,7 @@ Modern computation has become centralized, exorbitant, and gatekept:
 ## 🏛 System Architecture
 
 ```mermaid
-flowchart TBP
+flowchart TB
     subgraph UI_Layer["Frontend Experience (Next.js 14 / TypeScript)"]
         Canvas["Interactive Constellation Canvas"]
         AuthCtx["JWT Authority Context"]

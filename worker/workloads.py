@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import threading
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
-__all__ = ["ComputeCancelled", "Workload", "WORKLOADS", "workload"]
+__all__ = ["WORKLOADS", "ComputeCancelled", "Workload", "workload"]
 
 
 class ComputeCancelled(Exception):
     pass
 
 
-Workload = Callable[[Dict[str, Any], threading.Event], Dict[str, Any]]
-WORKLOADS: Dict[str, Workload] = {}
+Workload = Callable[[dict[str, Any], threading.Event], dict[str, Any]]
+WORKLOADS: dict[str, Workload] = {}
 
 _CANCEL_CHECK_EVERY = 20_000
 
@@ -25,7 +26,7 @@ def workload(name: str) -> Callable[[Workload], Workload]:
 
 
 @workload("sha256_pow")
-def sha256_pow(payload: Dict[str, Any], cancel: threading.Event) -> Dict[str, Any]:
+def sha256_pow(payload: dict[str, Any], cancel: threading.Event) -> dict[str, Any]:
     if not isinstance(payload, dict):
         payload = {}
     data: str = str(payload.get("data", ""))

@@ -7,7 +7,7 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Set
+from typing import Any
 
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidHandshake
@@ -37,9 +37,9 @@ class Config:
 
 @dataclass
 class _SessionState:
-    current_id: Optional[str] = None
-    cancel: Optional[threading.Event] = None
-    cancelled: Set[str] = field(default_factory=set)
+    current_id: str | None = None
+    cancel: threading.Event | None = None
+    cancelled: set[str] = field(default_factory=set)
 
     def cancel_current(self) -> None:
         if self.cancel is not None:
@@ -72,9 +72,9 @@ class Worker:
             except (KeyboardInterrupt, asyncio.CancelledError):
                 log.info("Worker stopped by user")
                 return
-            except (OSError, ConnectionClosed, InvalidHandshake, asyncio.TimeoutError) as exc:
+            except (TimeoutError, OSError, ConnectionClosed, InvalidHandshake) as exc:
                 log.warning("Connection lost (%s: %s)", type(exc).__name__, exc)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning("Unexpected connection error: %s", exc)
 
             delay = self._backoff_delay()
@@ -98,7 +98,7 @@ class Worker:
             "name": self.cfg.name,
             "version": VERSION,
         }))
-        queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         state = _SessionState()
         compute = asyncio.create_task(self._compute_loop(ws, queue, state))
         try:
@@ -111,9 +111,9 @@ class Worker:
             compute.cancel()
             await asyncio.gather(compute, return_exceptions=True)
 
-    async def _on_message(self, raw: Any, queue: asyncio.Queue[Dict[str, Any]], state: _SessionState) -> None:
+    async def _on_message(self, raw: Any, queue: asyncio.Queue[dict[str, Any]], state: _SessionState) -> None:
         try:
-            msg: Dict[str, Any] = json.loads(raw)
+            msg: dict[str, Any] = json.loads(raw)
         except (TypeError, ValueError):
             log.warning("Ignoring non-JSON frame")
             return
@@ -151,7 +151,7 @@ class Worker:
             if msg.get("fatal"):
                 raise FatalServerError(str(msg.get("message") or "fatal error"))
 
-    async def _compute_loop(self, ws: Any, queue: asyncio.Queue[Dict[str, Any]], state: _SessionState) -> None:
+    async def _compute_loop(self, ws: Any, queue: asyncio.Queue[dict[str, Any]], state: _SessionState) -> None:
         while True:
             task = await queue.get()
             if not isinstance(task, dict):
@@ -162,7 +162,7 @@ class Worker:
                 state.cancelled.discard(task_id)
                 continue
 
-            workload_name = task.get("workload")
+            workload_name = str(task.get("workload") or "")
             fn = WORKLOADS.get(workload_name)
             if fn is None:
                 await self._send(ws, {"type": "failed", "taskId": task_id, "error": f"unsupported workload {workload_name!r}"})
@@ -178,7 +178,7 @@ class Worker:
             log.info("▶  %s", task_id)
 
             try:
-                output: Dict[str, Any] = await asyncio.to_thread(fn, payload, state.cancel)
+                output: dict[str, Any] = await asyncio.to_thread(fn, payload, state.cancel)
             except ComputeCancelled:
                 log.info("■  %s cancelled (%.1fs)", task_id, time.monotonic() - started)
                 continue
@@ -198,7 +198,7 @@ class Worker:
             await self._send(ws, {"type": "result", "taskId": task_id, "output": output})
 
     @staticmethod
-    async def _send(ws: Any, obj: Dict[str, Any]) -> None:
+    async def _send(ws: Any, obj: dict[str, Any]) -> None:
         try:
             await ws.send(json.dumps(obj))
         except (ConnectionClosed, OSError):
