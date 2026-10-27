@@ -10,12 +10,22 @@
 ![WebSockets](https://img.shields.io/badge/WebSockets-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
+[![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20on%20Drive-E50914?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/file/d/11cKdRtHdirJBxJKJ0Q1gMTc60F4EWiEf/view?usp=sharing)
 
 **Dismantling centralized hyperscaler monopolies by transforming underutilized global consumer and enterprise hardware into a verified, high-throughput compute mesh.**
 
-[Live Architecture](#-system-architecture) • [Visual Showcase](#-visual-showcase--portal-tour) • [Implemented Features](#-feature-matrix-what-we-built) • [Future Roadmap](#-the-grand-roadmap-what-needs-to-be-implemented) • [Quick Start](#-quick-start)
+[📹 Demo Video](https://drive.google.com/file/d/11cKdRtHdirJBxJKJ0Q1gMTc60F4EWiEf/view?usp=sharing) • [Live Architecture](#-system-architecture) • [Visual Showcase](#-visual-showcase--portal-tour) • [Implemented Features](#-feature-matrix-what-we-built) • [Future Roadmap](#-the-grand-roadmap-what-needs-to-be-implemented) • [Quick Start](#-quick-start)
 
 </div>
+
+---
+
+## 🎬 Project Video Demonstration
+
+> 📺 **Full Platform Walkthrough & Live Demo:**  
+> 🔗 **[Click Here to Watch Vampire Cloud Demo Video on Google Drive](https://drive.google.com/file/d/11cKdRtHdirJBxJKJ0Q1gMTc60F4EWiEf/view?usp=sharing)**  
+> 
+> *Demonstrating the decentralized compute grid, multi-core worker hashing mesh, cryptographic proof-of-work validation, enterprise dispatch orchestration, dynamic spot-pricing, and escrow micro-settlements.*
 
 ---
 
