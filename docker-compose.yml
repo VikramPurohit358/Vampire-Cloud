@@ -12,8 +12,8 @@ services:
 
   master:
     build:
-      context: .
-      dockerfile: master/Dockerfile
+      context: ./master
+      dockerfile: Dockerfile
     container_name: vc-master
     restart: unless-stopped
     ports:
@@ -42,8 +42,8 @@ services:
 
   dashboard:
     build:
-      context: .
-      dockerfile: dashboard/Dockerfile
+      context: ./dashboard
+      dockerfile: Dockerfile
     container_name: vc-dashboard
     restart: unless-stopped
     ports:

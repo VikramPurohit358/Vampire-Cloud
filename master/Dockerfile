@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY master/package*.json ./
+COPY package*.json ./
 RUN npm ci --omit=dev
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
-COPY master/src ./src
+COPY src ./src
 RUN mkdir -p data
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s \
