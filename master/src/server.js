@@ -233,7 +233,8 @@ const server = http.createServer(async (req, res) => {
 
   // Company: Get billing ledger & purchase transactions
   if (pathname === '/api/company/billing' && req.method === 'GET') {
-    const companyId = parsed.query?.companyId || null;
+    const url = new URL(req.url, 'http://localhost');
+    const companyId = url.searchParams.get('companyId') || null;
     const history = await getBillingHistory(companyId);
     return sendJson(res, 200, { ok: true, history });
   }
@@ -359,6 +360,22 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // Worker: Claim earnings via /api/claims (used by WorkerPortal)
+  if (pathname === '/api/claims' && req.method === 'POST') {
+    try {
+      const body = await readJson(req);
+      const wallet = typeof body.wallet === 'string' ? body.wallet.trim() : '';
+      if (!wallet) {
+        return sendJson(res, 400, { ok: false, error: 'Wallet address is required' });
+      }
+      const claimRecord = state.claimWallet(wallet);
+      broadcastState();
+      return sendJson(res, 200, { ok: true, claim: claimRecord });
+    } catch (err) {
+      return sendJson(res, 400, { ok: false, error: err.message });
+    }
+  }
+
   res.writeHead(404, {
     'Content-Type': 'text/plain',
     'Access-Control-Allow-Origin': '*',
@@ -459,13 +476,8 @@ const telemetry = setInterval(() => {
 
 const persister = setInterval(() => state.saveState(), CONFIG.persistMs);
 
-if (state.loadState()) {
-  logEvent('info', `Restored ledger: ${state.getTasks().size} tasks, ${state.getQueue().length} pending, ${state.getWallets().size} wallets`);
-} else {
-  state.createBatch();
-  logEvent('info', `Created batch ${state.getCounters().batch}: ${state.getTasks().size} tasks at difficulty ${CONFIG.difficulty}`);
-}
-dispatch();
+// Do not create dummy batches on startup. Tasks only exist when broadcast by companies.
+logEvent('info', 'Task scheduler online: awaiting enterprise company workload broadcasts.');
 
 initDb().then(async () => {
   try {

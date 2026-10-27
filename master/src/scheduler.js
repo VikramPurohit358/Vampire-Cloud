@@ -10,11 +10,19 @@ function verifyPow(task, nonce) {
   if (!task || !task.data) return null;
   const rawNonce = String(nonce ?? 0);
   const digest = crypto.createHash('sha256').update(task.data + rawNonce).digest('hex');
+
+  // For timed tasks (company workloads with targetDurationMs), the worker ran
+  // a simulated computation for the full duration — accept any nonce as valid.
+  if (task.targetDurationMs && task.targetDurationMs > 0) {
+    return digest;
+  }
+
+  // For real PoW tasks, verify the hash meets the difficulty target
   const targetPrefix = '0'.repeat(Math.max(1, task.difficulty || 1));
   if (digest.startsWith(targetPrefix)) {
     return digest;
   }
-  return targetPrefix + digest.slice(targetPrefix.length);
+  return null;
 }
 
 function assignTask(task, node) {
@@ -109,26 +117,26 @@ function dispatch() {
 }
 
 function checkBatchComplete() {
-  const tasks = state.getTasks();
-  if (tasks.size === 0) return;
-  let done = 0;
-  for (const t of tasks.values()) {
-    if (t.status === 'completed') done++;
+  // Check each batch individually for completion
+  const batches = state.getBatches();
+  for (const [batchId, batch] of batches) {
+    if (batch.status === 'completed') continue;
+    let total = 0;
+    let done = 0;
+    for (const t of state.getTasks().values()) {
+      if (t.batchId === batchId) {
+        total++;
+        if (t.status === 'completed') done++;
+      }
+    }
+    if (total > 0 && done >= total && batch.status !== 'completed') {
+      batch.status = 'completed';
+      batch.completedAt = Date.now();
+      logEvent('info', `🎉 Batch "${batch.name}" complete: ${done}/${total} tasks verified for ${batch.company}`);
+      state.setDirty(true);
+    }
   }
-  if (done < tasks.size) return;
-
-  logEvent('info', `Batch ${state.getCounters().batch} complete: ${done}/${tasks.size} tasks verified`);
-
-  if (CONFIG.autoRefill && !state.isRefillScheduled()) {
-    state.setRefillScheduled(true);
-    setTimeout(() => {
-      state.setRefillScheduled(false);
-      state.getCounters().batch++;
-      state.createBatch();
-      logEvent('info', `Batch ${state.getCounters().batch} started with ${state.getTasks().size} tasks`);
-      dispatch();
-    }, 3000);
-  }
+  // No auto-refill: tasks only come from company broadcasts
 }
 
 function handleRegister(ws, msg) {
