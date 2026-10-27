@@ -18,6 +18,14 @@ export default function DashboardPage() {
   // Restore authenticated session from localStorage on initial mount
   useEffect(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('token') || params.get('inviteToken');
+        if (t) {
+          window.location.href = `/invite?token=${encodeURIComponent(t)}`;
+          return;
+        }
+      }
       const savedAuth = localStorage.getItem('vc_auth_session');
       if (savedAuth) {
         setSession(JSON.parse(savedAuth));
